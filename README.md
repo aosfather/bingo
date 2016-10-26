@@ -21,7 +21,7 @@ import "github.com/aosfather/bingo"
 type hello struct {
    bingo.Controller
 }
-func (this *hello) Get()(interface{},bingo.BingoError){
+func (this *hello) Get(bingo.Context c,p interface{})(interface{},bingo.BingoError){
             return "hello world",nil
 }
 
