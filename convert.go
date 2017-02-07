@@ -20,15 +20,21 @@ import (
 */
 type defaultResponseConverter struct {
 	templateDir string
+	engine      *TemplateEngine
 }
 
 func (this *defaultResponseConverter) setTemplateDir(dir string) {
-	this.templateDir = dir
+	if this.engine == nil {
+		this.engine = new(TemplateEngine)
+
+	}
+	this.engine.RootPath = dir
+
 }
 
 func (this *defaultResponseConverter) Convert(writer http.ResponseWriter, obj interface{}) {
 	if mv, ok := obj.(ModelView); ok {
-		writer.Header().Add(_CONTENT_TYPE, _CONTENT_HTML)
+		writer.Header().Add(_CONTENT_TYPE, _CONTENT_HTML+";charset=utf-8")
 		this.writeWithTemplate(writer, mv.View, mv.Model)
 	} else if rv, ok := obj.(StaticView); ok { //静态资源处理
 		writeUseFile(writer, rv)
@@ -40,27 +46,7 @@ func (this *defaultResponseConverter) Convert(writer http.ResponseWriter, obj in
 }
 
 func (this *defaultResponseConverter) writeWithTemplate(writer http.ResponseWriter, templateName string, obj interface{}) {
-	var tmpl *template.Template
-	var err error
-	templatefile := this.templateDir + "/" + templateName
-	if isFileExist(templatefile) {
-		tmpl, err = template.New(templateName).ParseFiles(templatefile)
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		if _, ok := obj.(BingoError); !ok {
-			obj = CreateError(500, "View file '"+templateName+"' not found")
-			this.writeWithTemplate(writer, "error", obj)
-			return
-		}
-
-		tmpl, err = template.New(templateName).Parse("<html><body><h1>{{.Code}}</h1><h3>{{.Error}}</h3></body></html>")
-	}
-	err = tmpl.Execute(writer, obj)
-	if err != nil {
-		panic(err)
-	}
+	this.engine.Render(writer, templateName, obj)
 }
 func writeUseFile(writer http.ResponseWriter, rv StaticView) {
 	writer.Header().Add(_CONTENT_TYPE, rv.Media)

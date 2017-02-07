@@ -5,6 +5,27 @@ import (
 	"log"
 )
 
+type Page struct {
+	Size  int
+	Index int
+	Count int
+}
+
+func (this *Page) getStart() int {
+	if this.Index > 0 {
+		return this.Size * (this.Index - 1)
+	}
+	return 0
+}
+
+func (this *Page) getEnd() int {
+	if this.Index >= 0 {
+		return this.Size * this.Index
+	}
+
+	return 0
+}
+
 type TxSession struct {
 	tx   *sql.Tx
 	db   *sql.DB
@@ -117,6 +138,59 @@ func (this *TxSession) ExeSql(sql string, objs ...interface{}) (id int64, affect
 
 }
 
+func (this *TxSession) QueryByPage(result interface{}, page Page, sql string, objs ...interface{}) []interface{} {
+	stmt, err := this.prepare(sql)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer stmt.Close()
+	rs, err := stmt.Query(objs...)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	defer rs.Close()
+
+	resultArray := []interface{}{}
+	resultType := getRealType(result)
+	startIndex := page.getStart()
+	endIndex := page.getEnd()
+	var index int = 0
+	cols, _ := rs.Columns()
+	for {
+
+		if rs.Next() {
+			if index < startIndex {
+				continue
+			}
+
+			if index > endIndex {
+				break
+			}
+
+			columnsMap := make(map[string]interface{}, len(cols))
+			refs := make([]interface{}, 0, len(cols))
+			for _, col := range cols {
+				var ref interface{}
+				columnsMap[col] = &ref
+				refs = append(refs, &ref)
+			}
+
+			rs.Scan(refs...)
+			arrayItem := createObjByType(resultType)
+			//填充result
+			fillStruct(columnsMap, arrayItem)
+			resultArray = append(resultArray, arrayItem)
+
+			index++
+
+		} else {
+			break
+		}
+	}
+	return resultArray
+}
 func (this *TxSession) Query(result interface{}, sql string, objs ...interface{}) bool {
 	stmt, err := this.prepare(sql)
 	if err != nil {

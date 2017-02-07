@@ -10,6 +10,18 @@ const (
 	_TAG_FIELD = "Field"
 )
 
+func getRealType(obj interface{}) reflect.Type {
+	objT := reflect.TypeOf(obj)
+	if objT.Kind() == reflect.Ptr {
+		return objT.Elem()
+	}
+	return objT
+}
+
+func createObjByType(t reflect.Type) interface{} {
+	return reflect.New(t).Interface()
+}
+
 func getStructTypeValue(obj interface{}) (reflect.Type, reflect.Value, error) {
 	objT := reflect.TypeOf(obj)
 	objV := reflect.ValueOf(obj)
