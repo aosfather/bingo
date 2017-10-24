@@ -56,3 +56,30 @@ func main(){
 }
 ```
 
+conf文件样例
+json格式的配置
+ bingo.mvc.template 模板目录配置
+bingo.mvc.static  静态资源目录
+bingo.system.usedb 是否启用数据库，默认不启用
+bingo.db 数据库的配置
+type 类型
+name 数据库名
+url 格式tcp（ip：port） 
+user 数据库用户名
+password 数据库密码
+
+样例如下
+```json
+{
+	"bingo.mvc.template":"/",
+	"bingo.mvc.static":"static",
+	"bingo.system.usedb":"true",
+	"bingo.db.type":"mysql",
+	"bingo.db.name":"configs",
+	"bingo.db.url":"tcp(127.0.0.1:3306)",
+	"bingo.db.user":"root",
+	"bingo.db.password":"root"
+	
+}
+```
+
