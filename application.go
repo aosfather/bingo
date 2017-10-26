@@ -6,12 +6,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 )
 
 type Application struct {
 	config  map[string]string
 	router  defaultRouter
 	factory *SessionFactory
+	port    int
 }
 
 func (this *Application) GetSession() *TxSession {
@@ -53,6 +55,14 @@ func (this *Application) init() {
 		this.factory = &sqlfactory
 	}
 	this.router.Init(this.factory)
+	this.port = 8990
+	if this.config["bingo.system.port"] != "" {
+		port, err := strconv.Atoi(this.config["bingo.system.port"])
+		if err == nil {
+			this.port = port
+		}
+
+	}
 	this.router.setTemplateRoot(this.config["bingo.mvc.template"])
 	//设置静态处理
 	this.router.staticHandler = &staticController{staticDir: this.config["bingo.mvc.static"]}
@@ -70,5 +80,5 @@ func (this *Application) Run(file string) {
 	}
 
 	this.init()
-	http.ListenAndServe("localhost:8990", &this.router)
+	http.ListenAndServe("localhost:"+strconv.Itoa(this.port), &this.router)
 }
