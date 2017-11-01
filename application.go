@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Application struct {
+	Name    string
 	config  map[string]string
 	router  defaultRouter
 	factory *SessionFactory
@@ -21,6 +23,14 @@ func (this *Application) GetSession() *TxSession {
 		return this.factory.GetSession()
 	}
 	return nil
+}
+
+//不能获取bingo自身的属性，只能获取应用自身的扩展属性
+func (this *Application) GetPropertyFromConfig(key string) string {
+	if strings.HasPrefix(key, "bingo.") {
+		return ""
+	}
+	return this.getProperty(key)
 }
 
 func (this *Application) getProperty(key string) string {
@@ -68,7 +78,13 @@ func (this *Application) init() {
 	this.router.staticHandler = &staticController{staticDir: this.config["bingo.mvc.static"]}
 }
 
-func (this *Application) Run(file string) {
+func (this *Application) Run() {
+
+	this.init()
+	http.ListenAndServe(":"+strconv.Itoa(this.port), &this.router)
+}
+
+func (this *Application) Load(file string) {
 	if file != "" && isFileExist(file) {
 		f, err := os.Open(file)
 		if err == nil {
@@ -78,7 +94,4 @@ func (this *Application) Run(file string) {
 		}
 
 	}
-
-	this.init()
-	http.ListenAndServe("localhost:"+strconv.Itoa(this.port), &this.router)
 }

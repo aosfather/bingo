@@ -14,6 +14,7 @@ const (
 	_CONTENT_TYPE_JSON = "application/json"
 	_CONTENT_JSON      = "application/json;charset=utf-8"
 	_CONTENT_HTML      = "text/html"
+	_CONTENT_XML       = "application/xml;charset=utf-8"
 )
 
 //简单的返回结果。用于rest api方式的返回
@@ -31,6 +32,11 @@ type ModelView struct {
 type StaticResource struct {
 	Type string
 	Uri  string
+}
+
+type MutiStruct interface {
+	GetData() interface{}
+	GetDataType() string
 }
 
 type FileHandler interface {

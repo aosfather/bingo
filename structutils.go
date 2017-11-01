@@ -10,6 +10,11 @@ const (
 	_TAG_FIELD = "Field"
 )
 
+func hasFieldofStruct(obj interface{}, fieldName string) bool {
+	rv := reflect.ValueOf(obj)
+	val := rv.FieldByName("XMLName")
+	return val.IsValid()
+}
 func getRealType(obj interface{}) reflect.Type {
 	objT := reflect.TypeOf(obj)
 	if objT.Kind() == reflect.Ptr {

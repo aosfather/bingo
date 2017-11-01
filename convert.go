@@ -2,6 +2,8 @@ package bingo
 
 import (
 	"encoding/json"
+	"encoding/xml"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -39,8 +41,10 @@ func (this *defaultResponseConverter) Convert(writer http.ResponseWriter, obj in
 	} else if rv, ok := obj.(StaticView); ok { //静态资源处理
 		writeUseFile(writer, rv)
 
+	} else if rv, ok := obj.(string); ok {
+		writer.Write([]byte(rv))
 	} else {
-		writer.Header().Add(_CONTENT_TYPE, _CONTENT_JSON)
+
 		writeUseJson(writer, obj)
 	}
 }
@@ -66,10 +70,21 @@ func writeUseFile(writer http.ResponseWriter, rv StaticView) {
 }
 
 func writeUseJson(writer http.ResponseWriter, obj interface{}) {
-	result, err := json.Marshal(obj)
-	if err == nil {
-		writer.Write(result)
+
+	if hasFieldofStruct(obj, "XMLName") {
+		writer.Header().Add(_CONTENT_TYPE, _CONTENT_XML)
+		result, err := xml.Marshal(obj)
+		if err == nil {
+			writer.Write(result)
+		}
+	} else {
+		writer.Header().Add(_CONTENT_TYPE, _CONTENT_JSON)
+		result, err := json.Marshal(obj)
+		if err == nil {
+			writer.Write(result)
+		}
 	}
+
 }
 
 func writeUseTemplate(writer http.ResponseWriter, templateName, content string, obj interface{}) {
@@ -95,6 +110,7 @@ func parseRequest(request *http.Request, target interface{}) {
 	contentType := request.Header.Get(_CONTENT_TYPE)
 	if _CONTENT_TYPE_JSON == contentType || _CONTENT_JSON == contentType { //处理为json的输入
 		input, err := ioutil.ReadAll(request.Body)
+		fmt.Printf("input json body:%s", input)
 		defer request.Body.Close()
 		if err == nil {
 			parameters := make(map[string]interface{})
@@ -105,7 +121,24 @@ func parseRequest(request *http.Request, target interface{}) {
 	} else { //标准form的处理
 		if request.Form == nil {
 			request.ParseForm()
+			fmt.Printf("form:%s", request.Form)
 			fillStructByForm(request.Form, target)
+			if sr, ok := target.(MutiStruct); ok {
+				input, err := ioutil.ReadAll(request.Body)
+				fmt.Printf("input body:%s", input)
+				defer request.Body.Close()
+				if err == nil {
+					//
+					if sr.GetDataType() == "json" {
+						parameters := make(map[string]interface{})
+						json.Unmarshal(input, &parameters)
+						fillStruct(parameters, sr.GetData())
+					} else if sr.GetDataType() == "xml" {
+						xml.Unmarshal(input, sr.GetData())
+					}
+
+				}
+			}
 		}
 	}
 
