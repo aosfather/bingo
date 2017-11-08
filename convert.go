@@ -34,7 +34,7 @@ func (this *defaultResponseConverter) setTemplateDir(dir string) {
 
 }
 
-func (this *defaultResponseConverter) Convert(writer http.ResponseWriter, obj interface{}) {
+func (this *defaultResponseConverter) Convert(writer http.ResponseWriter, obj interface{}, req *http.Request) {
 	if mv, ok := obj.(ModelView); ok {
 		writer.Header().Add(_CONTENT_TYPE, _CONTENT_HTML+";charset=utf-8")
 		this.writeWithTemplate(writer, mv.View, mv.Model)
@@ -43,6 +43,8 @@ func (this *defaultResponseConverter) Convert(writer http.ResponseWriter, obj in
 
 	} else if rv, ok := obj.(string); ok {
 		writer.Write([]byte(rv))
+	} else if rv, ok := obj.(RedirectEntity); ok { //处理跳转
+		http.Redirect(writer, req, rv.Url, rv.Code)
 	} else {
 
 		writeUseJson(writer, obj)

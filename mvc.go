@@ -34,6 +34,10 @@ type StaticResource struct {
 	Uri  string
 }
 
+type RedirectEntity struct {
+	Url  string
+	Code int
+}
 type MutiStruct interface {
 	GetData() interface{}
 	GetDataType() string

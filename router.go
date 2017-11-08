@@ -81,7 +81,7 @@ func (this *defaultRouter) addRouter(rule *routerRule) {
 
 }
 
-func (this *defaultRouter) doConvert(writer http.ResponseWriter, rule *routerRule, obj interface{}) {
+func (this *defaultRouter) doConvert(writer http.ResponseWriter, rule *routerRule, req *http.Request, obj interface{}) {
 	if err, ok := obj.(BingoError); ok {
 		writer.WriteHeader(err.Code())
 		obj = ModelView{"error", err}
@@ -90,7 +90,7 @@ func (this *defaultRouter) doConvert(writer http.ResponseWriter, rule *routerRul
 	if rule != nil && rule.convert != nil {
 		(*rule.convert).Convert(writer, obj)
 	} else {
-		this.defaultConvert.Convert(writer, obj)
+		this.defaultConvert.Convert(writer, obj, req)
 	}
 }
 
@@ -178,9 +178,9 @@ func (this *defaultRouter) ServeHTTP(writer http.ResponseWriter, request *http.R
 
 	//进行结果输出
 	if err != nil {
-		this.doConvert(writer, rule, err)
+		this.doConvert(writer, rule, request, err)
 	} else {
-		this.doConvert(writer, rule, obj)
+		this.doConvert(writer, rule, request, obj)
 	}
 
 	//请求处理完后拦截器进行处理
