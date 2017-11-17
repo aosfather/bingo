@@ -1,6 +1,7 @@
 package bingo
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"mime"
@@ -149,6 +150,7 @@ func (this *staticController) Get(c Context, p interface{}) (interface{}, BingoE
 			filePath = filePath + fileDir + "/"
 		}
 		fileRealPath := filePath + view.Name
+		fmt.Print(fileRealPath)
 
 		if isFileExist(fileRealPath) {
 			fi, err := os.Open(fileRealPath)
@@ -172,7 +174,7 @@ func parseUri(uri string) (dir string, name string, media string) {
 	dir = ""
 	if lastUrlIndex > 0 {
 		dir = string([]byte(uri)[1:lastUrlIndex])
-		dir = strings.Replace(dir, "/", "_", -1)
+		dir = strings.Replace(dir, "../", "_", -1)
 	}
 
 	if lastUrlIndex < 0 {

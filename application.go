@@ -18,6 +18,13 @@ type Application struct {
 	port    int
 }
 
+func (this *Application) AddInterceptor(h HandlerInterceptor) {
+	if h != nil {
+		this.router.interceptor.addInterceptor(h)
+	}
+
+}
+
 func (this *Application) GetSession() *TxSession {
 	if this.factory != nil {
 		return this.factory.GetSession()

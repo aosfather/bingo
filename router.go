@@ -18,12 +18,35 @@ func (this *defaultHandlerInterceptor) addInterceptor(interceptor HandlerInterce
 }
 
 func (this *defaultHandlerInterceptor) PreHandle(writer http.ResponseWriter, request *http.Request, handler *routerRule) bool {
+	if this.interceptors != nil && len(this.interceptors) > 0 {
+		for _, h := range this.interceptors {
+			if !h.PreHandle(writer, request, handler) {
+				return false
+			}
+		}
+	}
 	return true
 }
 func (this *defaultHandlerInterceptor) PostHandle(writer http.ResponseWriter, request *http.Request, handler *routerRule, mv *ModelView) BingoError {
+	if this.interceptors != nil && len(this.interceptors) > 0 {
+		for _, h := range this.interceptors {
+			err := h.PostHandle(writer, request, handler, mv)
+			if err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 func (this *defaultHandlerInterceptor) AfterCompletion(writer http.ResponseWriter, request *http.Request, handler *routerRule, err BingoError) BingoError {
+	if this.interceptors != nil && len(this.interceptors) > 0 {
+		for _, h := range this.interceptors {
+			e := h.AfterCompletion(writer, request, handler, err)
+			if e != nil {
+				return e
+			}
+		}
+	}
 	return nil
 }
 
