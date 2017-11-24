@@ -5,13 +5,19 @@ import (
 	"strings"
 )
 
-type defaultHandlerInterceptor struct {
-	interceptors []HandlerInterceptor
+type CustomHandlerInterceptor interface {
+	PreHandle(writer http.ResponseWriter, request *http.Request) bool
+	PostHandle(writer http.ResponseWriter, request *http.Request, mv *ModelView) BingoError
+	AfterCompletion(writer http.ResponseWriter, request *http.Request, err BingoError) BingoError
 }
 
-func (this *defaultHandlerInterceptor) addInterceptor(interceptor HandlerInterceptor) {
+type defaultHandlerInterceptor struct {
+	interceptors []CustomHandlerInterceptor
+}
+
+func (this *defaultHandlerInterceptor) addInterceptor(interceptor CustomHandlerInterceptor) {
 	if this.interceptors == nil {
-		this.interceptors = []HandlerInterceptor{interceptor}
+		this.interceptors = []CustomHandlerInterceptor{interceptor}
 	} else {
 		this.interceptors = append(this.interceptors, interceptor)
 	}
@@ -20,7 +26,7 @@ func (this *defaultHandlerInterceptor) addInterceptor(interceptor HandlerInterce
 func (this *defaultHandlerInterceptor) PreHandle(writer http.ResponseWriter, request *http.Request, handler *routerRule) bool {
 	if this.interceptors != nil && len(this.interceptors) > 0 {
 		for _, h := range this.interceptors {
-			if !h.PreHandle(writer, request, handler) {
+			if !h.PreHandle(writer, request) {
 				return false
 			}
 		}
@@ -30,7 +36,7 @@ func (this *defaultHandlerInterceptor) PreHandle(writer http.ResponseWriter, req
 func (this *defaultHandlerInterceptor) PostHandle(writer http.ResponseWriter, request *http.Request, handler *routerRule, mv *ModelView) BingoError {
 	if this.interceptors != nil && len(this.interceptors) > 0 {
 		for _, h := range this.interceptors {
-			err := h.PostHandle(writer, request, handler, mv)
+			err := h.PostHandle(writer, request, mv)
 			if err != nil {
 				return err
 			}
@@ -41,7 +47,7 @@ func (this *defaultHandlerInterceptor) PostHandle(writer http.ResponseWriter, re
 func (this *defaultHandlerInterceptor) AfterCompletion(writer http.ResponseWriter, request *http.Request, handler *routerRule, err BingoError) BingoError {
 	if this.interceptors != nil && len(this.interceptors) > 0 {
 		for _, h := range this.interceptors {
-			e := h.AfterCompletion(writer, request, handler, err)
+			e := h.AfterCompletion(writer, request, err)
 			if e != nil {
 				return e
 			}
@@ -52,10 +58,22 @@ func (this *defaultHandlerInterceptor) AfterCompletion(writer http.ResponseWrite
 
 type ContextImp struct {
 	txsession *TxSession
+	request   *http.Request
 }
 
 func (this *ContextImp) GetSqlSession() *TxSession {
 	return this.txsession
+}
+
+func (this *ContextImp) GetCookie(key string) string {
+	if this.request != nil {
+		cookie, _ := this.request.Cookie(key)
+		if cookie != nil {
+			return cookie.Value
+		}
+
+	}
+	return ""
 }
 
 func (this *ContextImp) begin() {
@@ -141,6 +159,7 @@ func (this *defaultRouter) doMethod(request *http.Request, handler HttpMethodHan
 	}
 
 	var context ContextImp
+	context.request = request
 	if this.sqlsessionfactory != nil {
 		context.txsession = this.sqlsessionfactory.GetSession()
 	}

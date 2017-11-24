@@ -18,7 +18,7 @@ type Application struct {
 	port    int
 }
 
-func (this *Application) AddInterceptor(h HandlerInterceptor) {
+func (this *Application) AddInterceptor(h CustomHandlerInterceptor) {
 	if h != nil {
 		this.router.interceptor.addInterceptor(h)
 	}

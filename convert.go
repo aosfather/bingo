@@ -44,6 +44,10 @@ func (this *defaultResponseConverter) Convert(writer http.ResponseWriter, obj in
 	} else if rv, ok := obj.(string); ok {
 		writer.Write([]byte(rv))
 	} else if rv, ok := obj.(RedirectEntity); ok { //处理跳转
+		for _, cookie := range rv.Cookies { //设置cookie
+			http.SetCookie(writer, cookie)
+		}
+
 		http.Redirect(writer, req, rv.Url, rv.Code)
 	} else {
 

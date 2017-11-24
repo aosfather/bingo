@@ -36,8 +36,9 @@ type StaticResource struct {
 }
 
 type RedirectEntity struct {
-	Url  string
-	Code int
+	Url     string
+	Code    int
+	Cookies []*http.Cookie
 }
 type MutiStruct interface {
 	GetData() interface{}
@@ -64,6 +65,7 @@ type routerRule struct {
 
 type Context interface {
 	GetSqlSession() *TxSession
+	GetCookie(key string) string
 }
 
 //返回结果转换器，用于输出返回结果
@@ -180,12 +182,20 @@ func parseUri(uri string) (dir string, name string, media string) {
 	if lastUrlIndex < 0 {
 		lastUrlIndex = 0
 	}
-	name = string([]byte(uri)[lastUrlIndex+1:])
 
 	if fixIndex < 0 {
 		fixIndex = len(uri)
 	}
-	fileSufix := string([]byte(uri)[fixIndex:])
+	var fileSufix string
+	querySufixIndex := strings.LastIndex(uri, "?")
+	if querySufixIndex > 0 && fixIndex < querySufixIndex {
+		fileSufix = string([]byte(uri)[fixIndex:querySufixIndex])
+		name = string([]byte(uri)[lastUrlIndex+1 : querySufixIndex])
+	} else {
+		fileSufix = string([]byte(uri)[fixIndex:])
+		name = string([]byte(uri)[lastUrlIndex+1:])
+	}
+	fmt.Println(fileSufix)
 	return dir, name, getMedia(fileSufix)
 
 }
