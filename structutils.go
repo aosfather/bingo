@@ -11,8 +11,13 @@ const (
 )
 
 func hasFieldofStruct(obj interface{}, fieldName string) bool {
-	rv := reflect.ValueOf(obj)
-	val := rv.FieldByName("XMLName")
+
+	_, rv, err := getStructTypeValue(obj)
+	if err != nil {
+		return false
+	}
+	//	rv := reflect.ValueOf(obj)
+	val := rv.FieldByName(fieldName)
 	return val.IsValid()
 }
 func getRealType(obj interface{}) reflect.Type {
