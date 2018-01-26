@@ -2,6 +2,7 @@ package bingo
 
 import (
 	"database/sql"
+	//	"fmt"
 	"log"
 )
 
@@ -19,11 +20,11 @@ func (this *Page) getStart() int {
 }
 
 func (this *Page) getEnd() int {
-	if this.Index >= 0 {
+	if this.Index > 0 {
 		return this.Size * this.Index
 	}
 
-	return 0
+	return this.Size - 1
 }
 
 type TxSession struct {
@@ -162,13 +163,13 @@ func (this *TxSession) QueryByPage(result interface{}, page Page, sql string, ob
 
 		if rs.Next() {
 			if index < startIndex {
+				index++
 				continue
 			}
 
-			if index > endIndex {
+			if index >= endIndex {
 				break
 			}
-
 			columnsMap := make(map[string]interface{}, len(cols))
 			refs := make([]interface{}, 0, len(cols))
 			for _, col := range cols {

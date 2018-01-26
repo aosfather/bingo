@@ -10,6 +10,13 @@ const (
 	_TAG_FIELD = "Field"
 )
 
+func isMap(obj interface{}) bool {
+	objT := reflect.TypeOf(obj)
+	if objT.Kind() == reflect.Map {
+		return true
+	}
+	return false
+}
 func hasFieldofStruct(obj interface{}, fieldName string) bool {
 
 	_, rv, err := getStructTypeValue(obj)

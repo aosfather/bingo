@@ -77,6 +77,10 @@ func (this *validateManager) getValidater(key string) *Validater {
 }
 
 func (this *validateManager) Validate(obj interface{}) []BingoError {
+	if isMap(obj) {
+		//TODO 需要看怎么做校验了
+		return nil
+	}
 	objT, objV, err := getStructTypeValue(obj)
 	if err != nil {
 		return []BingoError{CreateError(501, err.Error())}
