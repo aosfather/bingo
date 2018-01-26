@@ -133,9 +133,7 @@ func parseRequest(request *http.Request, target interface{}) {
 			if isMap(target) {
 				if sr, ok := target.(map[string]string); ok {
 					for key, _ := range formvalues {
-						fmt.Println(key)
 						sr[key] = formvalues.Get(key)
-						fmt.Println(sr[key])
 					}
 				}
 			} else {
