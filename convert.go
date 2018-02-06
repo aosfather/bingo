@@ -127,36 +127,38 @@ func parseRequest(request *http.Request, target interface{}) {
 	} else { //标准form的处理
 		if request.Form == nil {
 			request.ParseForm()
-			formvalues := request.Form
-			fmt.Printf("form:%s", formvalues)
+		}
 
-			if isMap(target) {
-				if sr, ok := target.(map[string]string); ok {
-					for key, _ := range formvalues {
-						sr[key] = formvalues.Get(key)
-					}
+		formvalues := request.Form
+		fmt.Printf("form:%s", formvalues)
+
+		if isMap(target) {
+			if sr, ok := target.(map[string]string); ok {
+				for key, _ := range formvalues {
+					sr[key] = formvalues.Get(key)
 				}
-			} else {
-				fillStructByForm(request.Form, target)
 			}
+		} else {
+			fillStructByForm(request.Form, target)
+		}
 
-			if sr, ok := target.(MutiStruct); ok {
-				input, err := ioutil.ReadAll(request.Body)
-				fmt.Printf("input body:%s", input)
-				defer request.Body.Close()
-				if err == nil {
-					//
-					if sr.GetDataType() == "json" {
-						parameters := make(map[string]interface{})
-						json.Unmarshal(input, &parameters)
-						fillStruct(parameters, sr.GetData())
-					} else if sr.GetDataType() == "xml" {
-						xml.Unmarshal(input, sr.GetData())
-					}
-
+		if sr, ok := target.(MutiStruct); ok {
+			input, err := ioutil.ReadAll(request.Body)
+			fmt.Printf("input body:%s", input)
+			defer request.Body.Close()
+			if err == nil {
+				//
+				if sr.GetDataType() == "json" {
+					parameters := make(map[string]interface{})
+					json.Unmarshal(input, &parameters)
+					fillStruct(parameters, sr.GetData())
+				} else if sr.GetDataType() == "xml" {
+					xml.Unmarshal(input, sr.GetData())
 				}
+
 			}
 		}
+
 	}
 
 }
