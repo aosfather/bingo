@@ -18,6 +18,14 @@ type Application struct {
 	port    int
 }
 
+func (this *Application) Validate(obj interface{}) []BingoError {
+	if this.router.validates.factory == nil {
+		this.router.validates.Init(&defaultValidaterFactory{})
+	}
+	return this.router.validates.Validate(obj)
+
+}
+
 func (this *Application) AddInterceptor(h CustomHandlerInterceptor) {
 	if h != nil {
 		this.router.interceptor.addInterceptor(h)

@@ -58,8 +58,10 @@ type validateManager struct {
 }
 
 func (this *validateManager) Init(factory ValidaterFactory) {
-	this.factory = factory
-	this.caches = make(map[string]*Validater)
+	if this.factory == nil {
+		this.factory = factory
+		this.caches = make(map[string]*Validater)
+	}
 }
 
 func (this *validateManager) getValidater(key string) *Validater {
