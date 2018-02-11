@@ -1,6 +1,7 @@
 package bingo
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -85,11 +86,21 @@ func writeUseJson(writer http.ResponseWriter, obj interface{}) {
 		}
 	} else {
 		writer.Header().Add(_CONTENT_TYPE, _CONTENT_JSON)
-		result, err := json.Marshal(obj)
+		//		result, err := json.Marshal(obj)
+		result, err := toJson(obj)
 		if err == nil {
 			writer.Write(result)
 		}
 	}
+
+}
+
+func toJson(obj interface{}) ([]byte, error) {
+	result := bytes.Buffer{}
+	encoder := json.NewEncoder(&result)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(obj)
+	return result.Bytes(), err
 
 }
 
