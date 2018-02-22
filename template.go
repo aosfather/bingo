@@ -68,5 +68,9 @@ func (this *TemplateEngine) writeError(w io.Writer, err BingoError) {
 }
 
 func (this *TemplateEngine) getRealPath(templateName string) string {
+	if this == nil {
+		return templateName
+	}
+
 	return this.RootPath + "/" + templateName
 }

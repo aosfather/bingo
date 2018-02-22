@@ -57,6 +57,9 @@ func (this *defaultResponseConverter) Convert(writer http.ResponseWriter, obj in
 }
 
 func (this *defaultResponseConverter) writeWithTemplate(writer http.ResponseWriter, templateName string, obj interface{}) {
+	if this.engine == nil {
+		this.setTemplateDir("")
+	}
 	this.engine.Render(writer, templateName, obj)
 }
 func writeUseFile(writer http.ResponseWriter, rv StaticView) {
@@ -132,7 +135,17 @@ func parseRequest(request *http.Request, target interface{}) {
 		if err == nil {
 			parameters := make(map[string]interface{})
 			json.Unmarshal(input, &parameters)
-			fillStruct(parameters, target)
+			if sr, ok := target.(MutiStruct); ok {
+				if request.Form == nil {
+					request.ParseForm()
+				}
+				fillStructByForm(request.Form, sr)
+				fillStruct(parameters, sr.GetData())
+
+			} else {
+				fillStruct(parameters, target)
+			}
+
 		}
 
 	} else { //标准form的处理
