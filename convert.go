@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -119,7 +118,7 @@ func writeUseTemplate(writer http.ResponseWriter, templateName, content string, 
 }
 
 //解析输入
-func parseRequest(request *http.Request, target interface{}) {
+func parseRequest(logger Log,request *http.Request, target interface{}) {
 	//静态资源的处理
 	if sr, ok := target.(*StaticResource); ok {
 		sr.Type = request.Header.Get(_CONTENT_TYPE)
@@ -130,7 +129,7 @@ func parseRequest(request *http.Request, target interface{}) {
 	contentType := request.Header.Get(_CONTENT_TYPE)
 	if _CONTENT_TYPE_JSON == contentType || _CONTENT_JSON == contentType { //处理为json的输入
 		input, err := ioutil.ReadAll(request.Body)
-		fmt.Printf("input json body:%s", input)
+		logger.Debug(string(input))
 		defer request.Body.Close()
 		if err == nil {
 			parameters := make(map[string]interface{})
@@ -154,7 +153,7 @@ func parseRequest(request *http.Request, target interface{}) {
 		}
 
 		formvalues := request.Form
-		fmt.Printf("form:%s", formvalues)
+		logger.Debug("form:%s", formvalues)
 
 		if isMap(target) {
 			if sr, ok := target.(map[string]string); ok {
@@ -168,7 +167,7 @@ func parseRequest(request *http.Request, target interface{}) {
 
 		if sr, ok := target.(MutiStruct); ok {
 			input, err := ioutil.ReadAll(request.Body)
-			fmt.Printf("input body:%s", input)
+			logger.Debug("input body:%s", input)
 			defer request.Body.Close()
 			if err == nil {
 				//

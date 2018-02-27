@@ -3,7 +3,6 @@ package bingo
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -16,6 +15,7 @@ type Application struct {
 	router  defaultRouter
 	factory *SessionFactory
 	port    int
+	logfactory *LogFactory
 }
 
 func (this *Application) Validate(obj interface{}) []BingoError {
@@ -38,6 +38,10 @@ func (this *Application) GetSession() *TxSession {
 		return this.factory.GetSession()
 	}
 	return nil
+}
+
+func (this *Application)GetLog(module string)Log {
+	return this.logfactory.GetLog(module)
 }
 
 //不能获取bingo自身的属性，只能获取应用自身的扩展属性
@@ -67,7 +71,7 @@ func (this *Application) init() {
 		this.config = make(map[string]string)
 	}
 	if this.config["bingo.system.usedb"] == "true" {
-		log.Println("init db")
+		this.logfactory.write(LEVEL_INFO,"bingo","init db")
 
 		var sqlfactory SessionFactory
 		sqlfactory.DBtype = this.config["bingo.db.type"]
@@ -90,11 +94,13 @@ func (this *Application) init() {
 	}
 	this.router.setTemplateRoot(this.config["bingo.mvc.template"])
 	//设置静态处理
-	this.router.staticHandler = &staticController{staticDir: this.config["bingo.mvc.static"]}
+	this.router.staticHandler = &staticController{staticDir: this.config["bingo.mvc.static"],log:this.logfactory.GetLog("bingo.static")}
+
+
 }
 
 func (this *Application) Run() {
-
+    defer this.logfactory.Close()
 	this.init()
 	http.ListenAndServe(":"+strconv.Itoa(this.port), &this.router)
 }
@@ -103,10 +109,12 @@ func (this *Application) Load(file string) {
 	if file != "" && isFileExist(file) {
 		f, err := os.Open(file)
 		if err == nil {
-			log.Println("open config file " + file)
 			txt, _ := ioutil.ReadAll(f)
 			json.Unmarshal(txt, &this.config)
 		}
 
 	}
+	this.logfactory=&LogFactory{}
+	this.logfactory.SetConfig(LogConfig{true,this.config["bingo.log.file"]})
+	this.router.logger=this.logfactory.GetLog("bingo.router")
 }

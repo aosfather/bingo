@@ -3,7 +3,6 @@ package bingo
 import (
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"net/http"
 	"os"
@@ -130,6 +129,7 @@ func (this *SimpleController) Delete(c Context, p interface{}) (interface{}, Bin
 type staticController struct {
 	Controller
 	staticDir string
+	log Log
 }
 
 func (this *staticController) GetParameType(method string) interface{} {
@@ -138,8 +138,7 @@ func (this *staticController) GetParameType(method string) interface{} {
 }
 func (this *staticController) Get(c Context, p interface{}) (interface{}, BingoError) {
 	if resource, ok := p.(*StaticResource); ok {
-		log.Println(resource.Type)
-		log.Println(resource.Uri)
+		this.log.Debug("static resource %s,%s",resource.Type,resource.Uri)
 		var view StaticView
 		var fileDir string
 		fileDir, view.Name, view.Media = parseUri(resource.Uri)
@@ -157,7 +156,7 @@ func (this *staticController) Get(c Context, p interface{}) (interface{}, BingoE
 		if isFileExist(fileRealPath) {
 			fi, err := os.Open(fileRealPath)
 			if err != nil {
-				log.Fatal(err)
+				this.log.Debug(err.Error())
 			} else {
 				view.Reader = fi
 				return view, nil

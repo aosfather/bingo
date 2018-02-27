@@ -100,6 +100,7 @@ type defaultRouter struct {
 	staticHandler     HttpMethodHandler
 	validates         validateManager
 	sqlsessionfactory *SessionFactory
+	logger Log
 }
 
 func (this *defaultRouter) Init(sqlfactory *SessionFactory) {
@@ -148,7 +149,7 @@ func (this *defaultRouter) match(uri string) *routerRule {
 func (this *defaultRouter) doMethod(request *http.Request, handler HttpMethodHandler) (interface{}, BingoError) {
 	method := request.Method
 	param := handler.GetParameType(method)
-	parseRequest(request, param)
+	parseRequest(this.logger,request, param)
 	errors := this.validates.Validate(param)
 	if errors != nil && len(errors) > 0 {
 		var errorText string
