@@ -7,40 +7,42 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"github.com/aosfather/bingo/utils"
+	"github.com/aosfather/bingo/sql"
+	"github.com/aosfather/bingo/mvc"
 )
+
 
 type Application struct {
 	Name    string
 	config  map[string]string
-	router  defaultRouter
-	factory *SessionFactory
+	router  mvc.DefaultRouter
+	factory *sql.SessionFactory
 	port    int
-	logfactory *LogFactory
+	logfactory *utils.LogFactory
 }
 
-func (this *Application) Validate(obj interface{}) []BingoError {
-	if this.router.validates.factory == nil {
-		this.router.validates.Init(&defaultValidaterFactory{})
-	}
-	return this.router.validates.Validate(obj)
+func (this *Application) Validate(obj interface{}) []mvc.BingoError {
+
+	return this.router.Validate(obj)
 
 }
 
-func (this *Application) AddInterceptor(h CustomHandlerInterceptor) {
+func (this *Application) AddInterceptor(h mvc.CustomHandlerInterceptor) {
 	if h != nil {
-		this.router.interceptor.addInterceptor(h)
+		this.router.AddInterceptor(h)
 	}
 
 }
 
-func (this *Application) GetSession() *TxSession {
+func (this *Application) GetSession() *sql.TxSession {
 	if this.factory != nil {
 		return this.factory.GetSession()
 	}
 	return nil
 }
 
-func (this *Application)GetLog(module string)Log {
+func (this *Application)GetLog(module string)utils.Log {
 	return this.logfactory.GetLog(module)
 }
 
@@ -59,11 +61,12 @@ func (this *Application) getProperty(key string) string {
 	return this.config[key]
 }
 
-func (this *Application) AddHandler(url string, handler HttpMethodHandler) {
-	var rule routerRule
-	rule.url = url
-	rule.methodHandler = handler
-	this.router.addRouter(&rule)
+func (this *Application) AddHandler(url string, handler mvc.HttpMethodHandler) {
+	var rule mvc.RouterRule
+	rule.Init(url,handler)
+	//rule.url = url
+	//rule.methodHandler = handler
+	this.router.AddRouter(&rule)
 }
 
 func (this *Application) init() {
@@ -71,9 +74,9 @@ func (this *Application) init() {
 		this.config = make(map[string]string)
 	}
 	if this.config["bingo.system.usedb"] == "true" {
-		this.logfactory.write(LEVEL_INFO,"bingo","init db")
+		this.logfactory.Write(utils.LEVEL_INFO,"bingo","init db")
 
-		var sqlfactory SessionFactory
+		var sqlfactory sql.SessionFactory
 		sqlfactory.DBtype = this.config["bingo.db.type"]
 		sqlfactory.DBname = this.config["bingo.db.name"]
 		sqlfactory.DBurl = this.config["bingo.db.url"]
@@ -92,10 +95,9 @@ func (this *Application) init() {
 		}
 
 	}
-	this.router.setTemplateRoot(this.config["bingo.mvc.template"])
+	this.router.SetTemplateRoot(this.config["bingo.mvc.template"])
 	//设置静态处理
-	this.router.staticHandler = &staticController{staticDir: this.config["bingo.mvc.static"],log:this.logfactory.GetLog("bingo.static")}
-
+	this.router.SetStaticControl(this.config["bingo.mvc.static"],this.logfactory.GetLog("bingo.static"))
 
 }
 
@@ -106,7 +108,7 @@ func (this *Application) Run() {
 }
 
 func (this *Application) Load(file string) {
-	if file != "" && isFileExist(file) {
+	if file != "" && utils.IsFileExist(file) {
 		f, err := os.Open(file)
 		if err == nil {
 			txt, _ := ioutil.ReadAll(f)
@@ -114,7 +116,7 @@ func (this *Application) Load(file string) {
 		}
 
 	}
-	this.logfactory=&LogFactory{}
-	this.logfactory.SetConfig(LogConfig{true,this.config["bingo.log.file"]})
-	this.router.logger=this.logfactory.GetLog("bingo.router")
+	this.logfactory=&utils.LogFactory{}
+	this.logfactory.SetConfig(utils.LogConfig{true,this.config["bingo.log.file"]})
+	this.router.SetLog(this.logfactory.GetLog("bingo.router"))
 }

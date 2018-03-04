@@ -17,11 +17,12 @@ SQL生成模板
 	可选值：auto、pk、not 分别表示 自动增长、主健、忽略
 
 */
-package bingo
+package sql
 
 import (
 	"reflect"
 	"strings"
+	"github.com/aosfather/bingo/utils"
 )
 
 var (
@@ -38,7 +39,7 @@ func SetTablePreFix(pfix string) {
 }
 
 func GetInsertSql(target interface{}) (string, []interface{}, error) {
-	objT, _, err := getStructTypeValue(target)
+	objT, _, err := utils.GetStructTypeValue(target)
 	if err != nil {
 		return "", nil, err
 	}
@@ -63,7 +64,7 @@ func GetInsertSql(target interface{}) (string, []interface{}, error) {
 }
 
 func StructValueToCustomArray(target interface{}, col ...string) ([]interface{}, error) {
-	_, objV, err := getStructTypeValue(target)
+	_, objV, err := utils.GetStructTypeValue(target)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +81,7 @@ func StructValueToCustomArray(target interface{}, col ...string) ([]interface{},
 	return args, nil
 }
 func structValueToArray(target interface{}) ([]interface{}, error) {
-	objT, objV, err := getStructTypeValue(target)
+	objT, objV, err := utils.GetStructTypeValue(target)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +107,7 @@ func structValueToArray(target interface{}) ([]interface{}, error) {
 }
 
 func CreateInserSql(target interface{}) (string, []interface{}, error) {
-	objT, objV, err := getStructTypeValue(target)
+	objT, objV, err := utils.GetStructTypeValue(target)
 	if err != nil {
 		return "", nil, err
 	}
@@ -126,7 +127,7 @@ func CreateInserSql(target interface{}) (string, []interface{}, error) {
 			tagTableName = tagTable
 		}
 
-		colName := getColName(f)
+		colName := utils.GetColName(f)
 		//对于自增长和明确忽略的字段不做转换
 		tagOption := f.Tag.Get("Option")
 		if tagOption != "" {
@@ -149,14 +150,14 @@ func CreateInserSql(target interface{}) (string, []interface{}, error) {
 
 	//如果没有指定表名就使用默认规则
 	if tagTableName == "" {
-		tagTableName = table_prefix + BingoString(objT.Name()).SnakeString()
+		tagTableName = table_prefix + utils.BingoString(objT.Name()).SnakeString()
 	}
 
 	return "Insert into " + tagTableName + "(" + sqlFields + ") Values(" + sqlValues + ")", args, nil
 }
 
 func CreateUpdateSql(target interface{}, col ...string) (string, []interface{}, error) {
-	objT, objV, err := getStructTypeValue(target)
+	objT, objV, err := utils.GetStructTypeValue(target)
 	if err != nil {
 		return "", nil, err
 	}
@@ -174,7 +175,7 @@ func CreateUpdateSql(target interface{}, col ...string) (string, []interface{}, 
 			if !b || !vf.CanInterface() {
 				continue
 			}
-			colName := getColName(f)
+			colName := utils.GetColName(f)
 			if fieldIndex > 0 {
 				sqlFields += ","
 			}
@@ -195,7 +196,7 @@ func CreateUpdateSql(target interface{}, col ...string) (string, []interface{}, 
 			tagTableName = tagTable
 		}
 
-		colName := getColName(f)
+		colName := utils.GetColName(f)
 		if len(col) == 0 {
 
 			if fieldIndex > 0 {
@@ -224,7 +225,7 @@ func CreateUpdateSql(target interface{}, col ...string) (string, []interface{}, 
 
 	//如果没有指定表名就使用默认规则
 	if tagTableName == "" {
-		tagTableName = table_prefix + BingoString(objT.Name()).SnakeString()
+		tagTableName = table_prefix + utils.BingoString(objT.Name()).SnakeString()
 	}
 
 	args = append(args, argsWhere...)
@@ -233,7 +234,7 @@ func CreateUpdateSql(target interface{}, col ...string) (string, []interface{}, 
 }
 
 func CreateQuerySql(target interface{}, col ...string) (string, []interface{}, error) {
-	objT, objV, err := getStructTypeValue(target)
+	objT, objV, err := utils.GetStructTypeValue(target)
 	if err != nil {
 		return "", nil, err
 	}
@@ -248,7 +249,7 @@ func CreateQuerySql(target interface{}, col ...string) (string, []interface{}, e
 			if !b || !vf.CanInterface() {
 				continue
 			}
-			colName := getColName(f)
+			colName := utils.GetColName(f)
 			if whereFields > 0 {
 				sqlwheres += " and "
 			}
@@ -269,7 +270,7 @@ func CreateQuerySql(target interface{}, col ...string) (string, []interface{}, e
 			tagTableName = tagTable
 		}
 		if len(col) == 0 {
-			colName := getColName(f)
+			colName := utils.GetColName(f)
 			//对于标识为pk的字段做为条件
 			tagOption := f.Tag.Get("Option")
 			if tagOption != "" {
@@ -289,7 +290,7 @@ func CreateQuerySql(target interface{}, col ...string) (string, []interface{}, e
 
 	//如果没有指定表名就使用默认规则
 	if tagTableName == "" {
-		tagTableName = table_prefix + BingoString(objT.Name()).SnakeString()
+		tagTableName = table_prefix + utils.BingoString(objT.Name()).SnakeString()
 	}
 
 	return "select * from " + tagTableName + " where " + sqlwheres, argsWhere, nil

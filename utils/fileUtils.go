@@ -1,10 +1,10 @@
-package bingo
+package utils
 
 import (
 	"os"
 )
 
-func isFileExist(file string) bool {
+func IsFileExist(file string) bool {
 	_, err := os.Stat(file)
 	return err == nil || os.IsExist(err)
 }

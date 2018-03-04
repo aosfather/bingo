@@ -1,4 +1,4 @@
-package bingo
+package mvc
 
 /*
 Bean Validation 中内置的 constraint
@@ -37,6 +37,7 @@ import (
 	"strings"
 	"time"
 	"unicode/utf8"
+	"github.com/aosfather/bingo/utils"
 )
 
 //格式:Valid:"name(rule);name(rule)"。其中name(rule):exp表达式
@@ -52,19 +53,19 @@ type ValidaterFactory interface {
 	CreateValidater(exp string) Validater
 }
 
-type validateManager struct {
+type ValidateManager struct {
 	factory ValidaterFactory
 	caches  map[string]*Validater
 }
 
-func (this *validateManager) Init(factory ValidaterFactory) {
+func (this *ValidateManager) Init(factory ValidaterFactory) {
 	if this.factory == nil {
 		this.factory = factory
 		this.caches = make(map[string]*Validater)
 	}
 }
 
-func (this *validateManager) getValidater(key string) *Validater {
+func (this *ValidateManager) getValidater(key string) *Validater {
 	if key != "" {
 		v := this.caches[key]
 		if v == nil {
@@ -78,14 +79,14 @@ func (this *validateManager) getValidater(key string) *Validater {
 
 }
 
-func (this *validateManager) Validate(obj interface{}) []BingoError {
-	if isMap(obj) {
+func (this *ValidateManager) Validate(obj interface{}) []BingoError {
+	if utils.IsMap(obj) {
 		//TODO 需要看怎么做校验了
 		return nil
 	}
-	objT, objV, err := getStructTypeValue(obj)
+	objT, objV, err := utils.GetStructTypeValue(obj)
 	if err != nil {
-		return []BingoError{CreateError(501, err.Error())}
+		return []BingoError{utils.CreateError(501, err.Error())}
 	}
 	var errors []BingoError
 	for i := 0; i < objT.NumField(); i++ {
@@ -113,7 +114,7 @@ func (this *validateManager) Validate(obj interface{}) []BingoError {
 
 }
 
-func (this *validateManager) ValidateByrules(obj interface{}, rules ...string) []BingoError {
+func (this *ValidateManager) ValidateByrules(obj interface{}, rules ...string) []BingoError {
 	var errors []BingoError
 	for _, rule := range rules {
 		v := this.getValidater(rule)
@@ -126,10 +127,10 @@ func (this *validateManager) ValidateByrules(obj interface{}, rules ...string) [
 	return errors
 }
 
-type defaultValidaterFactory struct {
+type DefaultValidaterFactory struct {
 }
 
-func (this *defaultValidaterFactory) CreateValidater(exp string) Validater {
+func (this *DefaultValidaterFactory) CreateValidater(exp string) Validater {
 	vexp := strings.TrimSpace(exp)
 	ruleStart := strings.Index(vexp, "(")
 	var vname, rule string
@@ -176,7 +177,7 @@ func (this numeric) Validate(obj interface{}) BingoError {
 	if str, ok := obj.(string); ok {
 		for _, v := range str {
 			if '9' < v || v < '0' {
-				return CreateError(501, "")
+				return utils.CreateError(501, "")
 			}
 		}
 		return nil
@@ -184,7 +185,7 @@ func (this numeric) Validate(obj interface{}) BingoError {
 	if _, ok := obj.(int); ok {
 		return nil
 	}
-	return CreateError(501, "")
+	return utils.CreateError(501, "")
 }
 
 type match struct {
@@ -199,7 +200,7 @@ func (this match) Validate(obj interface{}) BingoError {
 		return nil
 	}
 
-	return CreateError(501, "match failed")
+	return utils.CreateError(501, "match failed")
 
 }
 
@@ -225,12 +226,12 @@ func (this *compare) Validate(obj interface{}) BingoError {
 
 	if this.min && result < 0 {
 
-		return CreateError(501, "must max than ")
+		return utils.CreateError(501, "must max than ")
 
 	}
 
 	if !this.min && result > 0 {
-		return CreateError(501, "must min than")
+		return utils.CreateError(501, "must min than")
 	}
 
 	return nil
@@ -243,7 +244,7 @@ func (this *required) Validate(obj interface{}) BingoError {
 	if objIsNotNil(obj) {
 		return nil
 	}
-	return CreateError(501, "the value required!")
+	return utils.CreateError(501, "the value required!")
 }
 
 func objIsNotNil(obj interface{}) bool {

@@ -1,8 +1,10 @@
-package bingo
+package mvc
 
 import (
 	"net/http"
 	"strings"
+	"github.com/aosfather/bingo/utils"
+	"github.com/aosfather/bingo/sql"
 )
 
 type CustomHandlerInterceptor interface {
@@ -23,7 +25,7 @@ func (this *defaultHandlerInterceptor) addInterceptor(interceptor CustomHandlerI
 	}
 }
 
-func (this *defaultHandlerInterceptor) PreHandle(writer http.ResponseWriter, request *http.Request, handler *routerRule) bool {
+func (this *defaultHandlerInterceptor) PreHandle(writer http.ResponseWriter, request *http.Request, handler *RouterRule) bool {
 	if this.interceptors != nil && len(this.interceptors) > 0 {
 		for _, h := range this.interceptors {
 			if !h.PreHandle(writer, request) {
@@ -33,7 +35,7 @@ func (this *defaultHandlerInterceptor) PreHandle(writer http.ResponseWriter, req
 	}
 	return true
 }
-func (this *defaultHandlerInterceptor) PostHandle(writer http.ResponseWriter, request *http.Request, handler *routerRule, mv *ModelView) BingoError {
+func (this *defaultHandlerInterceptor) PostHandle(writer http.ResponseWriter, request *http.Request, handler *RouterRule, mv *ModelView) BingoError {
 	if this.interceptors != nil && len(this.interceptors) > 0 {
 		for _, h := range this.interceptors {
 			err := h.PostHandle(writer, request, mv)
@@ -44,7 +46,7 @@ func (this *defaultHandlerInterceptor) PostHandle(writer http.ResponseWriter, re
 	}
 	return nil
 }
-func (this *defaultHandlerInterceptor) AfterCompletion(writer http.ResponseWriter, request *http.Request, handler *routerRule, err BingoError) BingoError {
+func (this *defaultHandlerInterceptor) AfterCompletion(writer http.ResponseWriter, request *http.Request, handler *RouterRule, err BingoError) BingoError {
 	if this.interceptors != nil && len(this.interceptors) > 0 {
 		for _, h := range this.interceptors {
 			e := h.AfterCompletion(writer, request, err)
@@ -57,11 +59,11 @@ func (this *defaultHandlerInterceptor) AfterCompletion(writer http.ResponseWrite
 }
 
 type ContextImp struct {
-	txsession *TxSession
+	txsession *sql.TxSession
 	request   *http.Request
 }
 
-func (this *ContextImp) GetSqlSession() *TxSession {
+func (this *ContextImp) GetSqlSession() *sql.TxSession {
 	return this.txsession
 }
 
@@ -93,29 +95,52 @@ func (this *ContextImp) commit() {
 	}
 }
 
-type defaultRouter struct {
+type DefaultRouter struct {
 	defaultConvert    defaultResponseConverter
-	routerMap         map[string]*routerRule
+	routerMap         map[string]*RouterRule
 	interceptor       defaultHandlerInterceptor
 	staticHandler     HttpMethodHandler
-	validates         validateManager
-	sqlsessionfactory *SessionFactory
-	logger Log
+	validates         ValidateManager
+	sqlsessionfactory *sql.SessionFactory
+	logger utils.Log
 }
 
-func (this *defaultRouter) Init(sqlfactory *SessionFactory) {
+func (this *DefaultRouter) Init(sqlfactory *sql.SessionFactory) {
 	this.sqlsessionfactory = sqlfactory
-	this.validates.Init(&defaultValidaterFactory{})
+	this.validates.Init(&DefaultValidaterFactory{})
 }
-func (this *defaultRouter) setTemplateRoot(dir string) {
-	if isFileExist(dir) {
+func (this *DefaultRouter)Validate(obj interface{}) []BingoError{
+	if this.validates.factory==nil {
+		this.validates.Init(&DefaultValidaterFactory{})
+	}
+
+	return this.validates.Validate(obj)
+}
+
+func (this *DefaultRouter)AddInterceptor(h CustomHandlerInterceptor){
+	if h!=nil {
+		this.interceptor.addInterceptor(h)
+	}
+
+}
+
+func (this *DefaultRouter)SetStaticControl(path string,l utils.Log){
+	this.staticHandler=&staticController{staticDir: path,log:l}
+
+}
+func(this *DefaultRouter)SetLog(l utils.Log){
+	this.logger=l
+}
+
+func (this *DefaultRouter) SetTemplateRoot(dir string) {
+	if utils.IsFileExist(dir) {
 		this.defaultConvert.setTemplateDir(dir)
 	}
 
 }
-func (this *defaultRouter) addRouter(rule *routerRule) {
+func (this *DefaultRouter) AddRouter(rule *RouterRule) {
 	if this.routerMap == nil {
-		this.routerMap = make(map[string]*routerRule)
+		this.routerMap = make(map[string]*RouterRule)
 	}
 	if rule != nil {
 		this.routerMap[rule.url] = rule
@@ -123,7 +148,7 @@ func (this *defaultRouter) addRouter(rule *routerRule) {
 
 }
 
-func (this *defaultRouter) doConvert(writer http.ResponseWriter, rule *routerRule, req *http.Request, obj interface{}) {
+func (this *DefaultRouter) doConvert(writer http.ResponseWriter, rule *RouterRule, req *http.Request, obj interface{}) {
 	if err, ok := obj.(BingoError); ok {
 		writer.WriteHeader(err.Code())
 		obj = ModelView{"error", err}
@@ -136,7 +161,7 @@ func (this *defaultRouter) doConvert(writer http.ResponseWriter, rule *routerRul
 	}
 }
 
-func (this *defaultRouter) match(uri string) *routerRule {
+func (this *DefaultRouter) match(uri string) *RouterRule {
 	paramIndex := strings.Index(uri, "?")
 	if paramIndex == -1 {
 		return this.routerMap[uri]
@@ -146,7 +171,7 @@ func (this *defaultRouter) match(uri string) *routerRule {
 	}
 }
 
-func (this *defaultRouter) doMethod(request *http.Request, handler HttpMethodHandler) (interface{}, BingoError) {
+func (this *DefaultRouter) doMethod(request *http.Request, handler HttpMethodHandler) (interface{}, BingoError) {
 	method := request.Method
 	param := handler.GetParameType(method)
 	parseRequest(this.logger,request, param)
@@ -156,7 +181,7 @@ func (this *defaultRouter) doMethod(request *http.Request, handler HttpMethodHan
 		for _, err := range errors {
 			errorText += err.Error() + ";"
 		}
-		return nil, CreateError(400, errorText)
+		return nil, utils.CreateError(400, errorText)
 	}
 
 	var context ContextImp
@@ -166,7 +191,7 @@ func (this *defaultRouter) doMethod(request *http.Request, handler HttpMethodHan
 	}
 
 	//GET 方式不启动事务控制
-	if method == Method_GET {
+	if method == utils.Method_GET {
 		return handler.Get(&context, param)
 	}
 
@@ -175,14 +200,14 @@ func (this *defaultRouter) doMethod(request *http.Request, handler HttpMethodHan
 	var result interface{}
 	var err BingoError
 	switch method {
-	case Method_POST:
+	case utils.Method_POST:
 		result, err = handler.Post(&context, param)
-	case Method_PUT:
+	case utils.Method_PUT:
 		result, err = handler.Put(&context, param)
-	case Method_DELETE:
+	case utils.Method_DELETE:
 		result, err = handler.Delete(&context, param)
 	default:
-		result, err = nil, CreateError(405, "method not found!")
+		result, err = nil, utils.CreateError(405, "method not found!")
 	}
 
 	if err == nil {
@@ -194,7 +219,7 @@ func (this *defaultRouter) doMethod(request *http.Request, handler HttpMethodHan
 
 }
 
-func (this *defaultRouter) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+func (this *DefaultRouter) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	uri := request.RequestURI
 	rule := this.match(uri)
 	//handler前拦截器处理

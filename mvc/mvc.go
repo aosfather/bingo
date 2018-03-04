@@ -1,4 +1,4 @@
-package bingo
+package mvc
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"github.com/aosfather/bingo/utils"
+	"github.com/aosfather/bingo/sql"
 )
 
 const (
@@ -56,14 +58,20 @@ type StaticView struct {
 	Reader FileHandler //资源内容
 }
 
-type routerRule struct {
+type RouterRule struct {
 	url           string
 	convert       *ResponseConverter
 	methodHandler HttpMethodHandler
 }
 
+func (this *RouterRule)Init(url string,handle HttpMethodHandler){
+	this.url=url
+	this.methodHandler=handle
+
+}
+
 type Context interface {
-	GetSqlSession() *TxSession
+	GetSqlSession() *sql.TxSession
 	GetCookie(key string) string
 }
 
@@ -82,9 +90,9 @@ type HttpMethodHandler interface {
 }
 
 type HandlerInterceptor interface {
-	PreHandle(writer http.ResponseWriter, request *http.Request, handler *routerRule) bool
-	PostHandle(writer http.ResponseWriter, request *http.Request, handler *routerRule, mv *ModelView) BingoError
-	AfterCompletion(writer http.ResponseWriter, request *http.Request, handler *routerRule, err BingoError) BingoError
+	PreHandle(writer http.ResponseWriter, request *http.Request, handler *RouterRule) bool
+	PostHandle(writer http.ResponseWriter, request *http.Request, handler *RouterRule, mv *ModelView) BingoError
+	AfterCompletion(writer http.ResponseWriter, request *http.Request, handler *RouterRule, err BingoError) BingoError
 }
 
 type Controller struct {
@@ -99,17 +107,17 @@ func (this *Controller) GetParameType(method string) interface{} {
 
 }
 func (this *Controller) Get(c Context, p interface{}) (interface{}, BingoError) {
-	return nil, CreateError(Code_NOT_ALLOWED, "method not allowed!")
+	return nil, utils.CreateError(utils.Code_NOT_ALLOWED, "method not allowed!")
 
 }
 func (this *Controller) Post(c Context, p interface{}) (interface{}, BingoError) {
-	return nil, CreateError(Code_NOT_ALLOWED, "method not allowed!")
+	return nil, utils.CreateError(utils.Code_NOT_ALLOWED, "method not allowed!")
 }
 func (this *Controller) Put(c Context, p interface{}) (interface{}, BingoError) {
-	return nil, CreateError(Code_NOT_ALLOWED, "method not allowed!")
+	return nil, utils.CreateError(utils.Code_NOT_ALLOWED, "method not allowed!")
 }
 func (this *Controller) Delete(c Context, p interface{}) (interface{}, BingoError) {
-	return nil, CreateError(Code_NOT_ALLOWED, "method not allowed!")
+	return nil, utils.CreateError(utils.Code_NOT_ALLOWED, "method not allowed!")
 }
 
 type SimpleController struct {
@@ -129,7 +137,7 @@ func (this *SimpleController) Delete(c Context, p interface{}) (interface{}, Bin
 type staticController struct {
 	Controller
 	staticDir string
-	log Log
+	log utils.Log
 }
 
 func (this *staticController) GetParameType(method string) interface{} {
@@ -153,7 +161,7 @@ func (this *staticController) Get(c Context, p interface{}) (interface{}, BingoE
 		fileRealPath := filePath + view.Name
 		fmt.Print(fileRealPath)
 
-		if isFileExist(fileRealPath) {
+		if utils.IsFileExist(fileRealPath) {
 			fi, err := os.Open(fileRealPath)
 			if err != nil {
 				this.log.Debug(err.Error())
@@ -165,7 +173,7 @@ func (this *staticController) Get(c Context, p interface{}) (interface{}, BingoE
 		}
 
 	}
-	return nil, CreateError(Code_NOT_FOUND, "bingo! The uri not found!")
+	return nil, utils.CreateError(utils.Code_NOT_FOUND, "bingo! The uri not found!")
 
 }
 

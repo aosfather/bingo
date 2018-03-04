@@ -1,5 +1,5 @@
 // bingo project bingo.go
-package bingo
+package utils
 
 /**
 200 OK 201 Created 204 No Content
@@ -29,10 +29,7 @@ const (
 	Code_NOT_ALLOWED    = 405
 )
 
-type BingoError interface {
-	error
-	Code() int
-}
+
 
 type MethodError struct {
 	code int

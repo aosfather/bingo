@@ -1,4 +1,4 @@
-package bingo
+package mvc
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"github.com/aosfather/bingo/utils"
 )
 
 /*
@@ -80,7 +81,7 @@ func writeUseFile(writer http.ResponseWriter, rv StaticView) {
 
 func writeUseJson(writer http.ResponseWriter, obj interface{}) {
 
-	if hasFieldofStruct(obj, "XMLName") {
+	if utils.HasFieldofStruct(obj, "XMLName") {
 		writer.Header().Add(_CONTENT_TYPE, _CONTENT_XML)
 		result, err := xml.Marshal(obj)
 		if err == nil {
@@ -118,7 +119,7 @@ func writeUseTemplate(writer http.ResponseWriter, templateName, content string, 
 }
 
 //解析输入
-func parseRequest(logger Log,request *http.Request, target interface{}) {
+func parseRequest(logger utils.Log,request *http.Request, target interface{}) {
 	//静态资源的处理
 	if sr, ok := target.(*StaticResource); ok {
 		sr.Type = request.Header.Get(_CONTENT_TYPE)
@@ -138,11 +139,11 @@ func parseRequest(logger Log,request *http.Request, target interface{}) {
 				if request.Form == nil {
 					request.ParseForm()
 				}
-				fillStructByForm(request.Form, sr)
-				fillStruct(parameters, sr.GetData())
+				utils.FillStructByForm(request.Form, sr)
+				utils.FillStruct(parameters, sr.GetData())
 
 			} else {
-				fillStruct(parameters, target)
+				utils.FillStruct(parameters, target)
 			}
 
 		}
@@ -155,14 +156,14 @@ func parseRequest(logger Log,request *http.Request, target interface{}) {
 		formvalues := request.Form
 		logger.Debug("form:%s", formvalues)
 
-		if isMap(target) {
+		if utils.IsMap(target) {
 			if sr, ok := target.(map[string]string); ok {
 				for key, _ := range formvalues {
 					sr[key] = formvalues.Get(key)
 				}
 			}
 		} else {
-			fillStructByForm(request.Form, target)
+			utils.FillStructByForm(request.Form, target)
 		}
 
 		if sr, ok := target.(MutiStruct); ok {
@@ -174,7 +175,7 @@ func parseRequest(logger Log,request *http.Request, target interface{}) {
 				if sr.GetDataType() == "json" {
 					parameters := make(map[string]interface{})
 					json.Unmarshal(input, &parameters)
-					fillStruct(parameters, sr.GetData())
+					utils.FillStruct(parameters, sr.GetData())
 				} else if sr.GetDataType() == "xml" {
 					xml.Unmarshal(input, sr.GetData())
 				}

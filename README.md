@@ -9,15 +9,17 @@ the simple framework for light web application
 
 # Road Map
 ## Ver 0.4 
-* url支持path变量，并自动映射到对象的字段中
-* 对session提供简单的支持
+* 增加脚本插件实现，支持lua脚本
 
-## Ver 0.3
-* 支持gob序列化
-* rpc调用支持gob序列化的服务
 ------------------------------------------------
+## Ver 0.3 the current development version
+* 支持xml
+* 支持微信
+* 支持redis cache
+* 支持MQ
 
-## Ver 0.2 the current development version
+
+## Ver 0.2
 * 提供基于json的rpc调用支持
 * 实现和基于bingo框架的服务互相调用
 * template变成可选设置

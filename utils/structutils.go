@@ -1,4 +1,4 @@
-package bingo
+package utils
 
 import (
 	"net/url"
@@ -10,16 +10,16 @@ const (
 	_TAG_FIELD = "Field"
 )
 
-func isMap(obj interface{}) bool {
+func IsMap(obj interface{}) bool {
 	objT := reflect.TypeOf(obj)
 	if objT.Kind() == reflect.Map {
 		return true
 	}
 	return false
 }
-func hasFieldofStruct(obj interface{}, fieldName string) bool {
+func HasFieldofStruct(obj interface{}, fieldName string) bool {
 
-	_, rv, err := getStructTypeValue(obj)
+	_, rv, err :=GetStructTypeValue(obj)
 	if err != nil {
 		return false
 	}
@@ -27,7 +27,7 @@ func hasFieldofStruct(obj interface{}, fieldName string) bool {
 	val := rv.FieldByName(fieldName)
 	return val.IsValid()
 }
-func getRealType(obj interface{}) reflect.Type {
+func GetRealType(obj interface{}) reflect.Type {
 	objT := reflect.TypeOf(obj)
 	if objT.Kind() == reflect.Ptr {
 		return objT.Elem()
@@ -35,11 +35,11 @@ func getRealType(obj interface{}) reflect.Type {
 	return objT
 }
 
-func createObjByType(t reflect.Type) interface{} {
+func CreateObjByType(t reflect.Type) interface{} {
 	return reflect.New(t).Interface()
 }
 
-func getStructTypeValue(obj interface{}) (reflect.Type, reflect.Value, error) {
+func GetStructTypeValue(obj interface{}) (reflect.Type, reflect.Value, error) {
 	objT := reflect.TypeOf(obj)
 	objV := reflect.ValueOf(obj)
 	switch {
@@ -54,8 +54,8 @@ func getStructTypeValue(obj interface{}) (reflect.Type, reflect.Value, error) {
 	return objT, objV, nil
 }
 
-func fillStructByForm(values url.Values, target interface{}) error {
-	objT, objV, err := getStructTypeValue(target)
+func FillStructByForm(values url.Values, target interface{}) error {
+	objT, objV, err := GetStructTypeValue(target)
 	if err != nil {
 		return err
 	}
@@ -76,8 +76,8 @@ func fillStructByForm(values url.Values, target interface{}) error {
 	return nil
 }
 
-func fillStruct(values map[string]interface{}, target interface{}) error {
-	objT, objV, err := getStructTypeValue(target)
+func FillStruct(values map[string]interface{}, target interface{}) error {
+	objT, objV, err := GetStructTypeValue(target)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func fillStruct(values map[string]interface{}, target interface{}) error {
 			continue
 		}
 
-		colName := getColName(f)
+		colName := GetColName(f)
 		v := values[colName]
 		if v != nil && vf.CanSet() {
 			setFieldValue(vf, v)
@@ -107,10 +107,10 @@ func getFormFieldName(field reflect.StructField) string {
 	//		colName = tagField
 	//	}
 	//	return colName
-	return getColName(field)
+	return GetColName(field)
 }
 
-func getColName(field reflect.StructField) string {
+func GetColName(field reflect.StructField) string {
 	colName := field.Tag.Get(_TAG_FIELD)
 	if colName == "" {
 		colName = BingoString(field.Name).SnakeString()

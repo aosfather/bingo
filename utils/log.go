@@ -1,4 +1,4 @@
-package bingo
+package utils
 
 import (
 	"log"
@@ -48,7 +48,7 @@ func (this *LogFactory)Close(){
 	}
 }
 
-func (this *LogFactory)write(level int,prefix string,fmt string,obj ...interface{}) {
+func (this *LogFactory)Write(level int,prefix string,fmt string,obj ...interface{}) {
 	   if level >= this.loglevel { //判断loglevel是否大于指定的level，如果大于则输出，否则直接抛弃
 		   content := this.formatHeader(prefix, level) + fmt + "\n"
 		   if this.l == nil {
@@ -83,15 +83,15 @@ type logImp struct {
 	factory *LogFactory
 }
 func (this *logImp)Info(msg string,obj ...interface{}){
-   this.factory.write(LEVEL_INFO,this.module,msg,obj...)
+   this.factory.Write(LEVEL_INFO,this.module,msg,obj...)
 }
 
 func (this *logImp)Debug(msg string,obj ...interface{}){
-	this.factory.write(LEVEL_DEBUG,this.module,msg,obj...)
+	this.factory.Write(LEVEL_DEBUG,this.module,msg,obj...)
 }
 func (this *logImp)Error(msg string,obj ...interface{}){
-	this.factory.write(LEVEL_ERROR,this.module,msg,obj...)
+	this.factory.Write(LEVEL_ERROR,this.module,msg,obj...)
 }
 func (this *logImp)Warning(msg string,obj ...interface{}){
-	this.factory.write(LEVEL_WARN,this.module,msg,obj...)
+	this.factory.Write(LEVEL_WARN,this.module,msg,obj...)
 }

@@ -1,9 +1,10 @@
-package bingo
+package sql
 
 import (
 	"database/sql"
 	//	"fmt"
 	"log"
+	"github.com/aosfather/bingo/utils"
 )
 
 type Page struct {
@@ -62,7 +63,7 @@ func (this *TxSession) prepare(sql string) (*sql.Stmt, error) {
 	} else if this.db != nil {
 		return this.db.Prepare(sql)
 	}
-	return nil, CreateError(500, "no db init")
+	return nil, utils.CreateError(500, "no db init")
 }
 
 func (this *TxSession) Close() {
@@ -154,7 +155,7 @@ func (this *TxSession) QueryByPage(result interface{}, page Page, sql string, ob
 	defer rs.Close()
 
 	resultArray := []interface{}{}
-	resultType := getRealType(result)
+	resultType := utils.GetRealType(result)
 	startIndex := page.getStart()
 	endIndex := page.getEnd()
 	var index int = 0
@@ -179,9 +180,9 @@ func (this *TxSession) QueryByPage(result interface{}, page Page, sql string, ob
 			}
 
 			rs.Scan(refs...)
-			arrayItem := createObjByType(resultType)
+			arrayItem := utils.CreateObjByType(resultType)
 			//填充result
-			fillStruct(columnsMap, arrayItem)
+			utils.FillStruct(columnsMap, arrayItem)
 			resultArray = append(resultArray, arrayItem)
 
 			index++
@@ -217,7 +218,7 @@ func (this *TxSession) Query(result interface{}, sql string, objs ...interface{}
 	if rs.Next() {
 		rs.Scan(refs...)
 		//填充result
-		fillStruct(columnsMap, result)
+		utils.FillStruct(columnsMap, result)
 		return true
 	}
 

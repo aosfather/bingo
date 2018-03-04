@@ -1,8 +1,9 @@
-package bingo
+package mvc
 
 import (
 	"html/template"
 	"io"
+	"github.com/aosfather/bingo/utils"
 )
 
 /*
@@ -35,20 +36,20 @@ func (this *TemplateEngine) Render(w io.Writer, templateName string, data interf
 func (this *TemplateEngine) writeTemplate(w io.Writer, templateName string, data interface{}) BingoError {
 	var templateError BingoError = nil
 	templateFile := this.getRealPath(templateName)
-	if isFileExist(templateFile) {
+	if utils.IsFileExist(templateFile) {
 		tmpl, err := template.New(templateName).ParseFiles(templateFile)
 		if err != nil {
-			templateError = CreateError(500, "template load error:"+err.Error())
+			templateError = utils.CreateError(500, "template load error:"+err.Error())
 
 		} else {
 			err = tmpl.Execute(w, data)
 			if err != nil {
-				templateError = CreateError(500, "template render error:"+err.Error())
+				templateError = utils.CreateError(500, "template render error:"+err.Error())
 
 			}
 		}
 	} else {
-		templateError = CreateError(404, "View file '"+templateName+"' not found")
+		templateError = utils.CreateError(404, "View file '"+templateName+"' not found")
 	}
 	return templateError
 }

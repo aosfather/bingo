@@ -1,10 +1,11 @@
-package bingo
+package rpc
 
 import (
 	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
+	"github.com/aosfather/bingo/utils"
 )
 
 type RpcObject interface {
@@ -46,7 +47,7 @@ func (this *BingoJsonRpcClient) invoke(obj *BingoJsonRpcObject, result interface
 		return nil
 
 	}
-	return CreateError(500, "rpc object is nil")
+	return utils.CreateError(500, "rpc object is nil")
 }
 
 func methodtoUrl(method string) string {
