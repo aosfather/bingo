@@ -56,8 +56,8 @@ func main(){
 ```
 
 ## conf文件样例-----json格式的配置
-* bingo.mvc.template 模板目录配置
-* bingo.mvc.static  静态资源目录
+* bingo.mvc.template 模板目录配置  --可选
+* bingo.mvc.static  静态资源目录   --可选
 * bingo.system.usedb 是否启用数据库，默认不启用
 * bingo.system.port 指定服务监听的端口，如果不指定默认端口8990
 * bingo.db 数据库的配置
