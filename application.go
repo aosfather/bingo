@@ -146,6 +146,7 @@ func (this *TApplication)Run(file string){
 	}
 	this.mvc.Init(&this.context)
 	//加载controller
+	this.mvc.AddController(&rootController{})
 	if this.loadHandler!=nil {
 		if !this.loadHandler(&this.mvc,&this.context){
 			panic("load http handler error! please check OnLoadHandler function")

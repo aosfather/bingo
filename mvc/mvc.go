@@ -70,6 +70,12 @@ func (this *RouterRule)Init(url string,handle HttpMethodHandler){
 
 }
 
+type BeanFactory interface {
+	GetLog(module string)utils.Log
+	GetService(name string) interface{}
+	GetSession() *sql.TxSession
+}
+
 type Context interface {
 	GetSqlSession() *sql.TxSession
 	GetCookie(key string) string
@@ -95,9 +101,28 @@ type HandlerInterceptor interface {
 	AfterCompletion(writer http.ResponseWriter, request *http.Request, handler *RouterRule, err BingoError) BingoError
 }
 
-type Controller struct {
+type HttpController interface{
+	Init()
+	GetUrl() string
+	SetBeanFactory(f BeanFactory)
 }
 
+type Controller struct {
+	factory BeanFactory
+}
+
+func (this *Controller) Init(){
+
+}
+func (this *Controller)GetUrl() string{
+	return ""
+}
+func (this *Controller)SetBeanFactory(f BeanFactory){
+	this.factory=f
+}
+func (this *Controller) GetBeanFactory() BeanFactory {
+	return this.factory
+}
 func (this *Controller) GetSelf() interface{} {
 	return this
 }

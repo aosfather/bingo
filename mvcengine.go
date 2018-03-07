@@ -4,14 +4,17 @@ import (
 	"github.com/aosfather/bingo/mvc"
 	"strconv"
 	"net/http"
+	"github.com/aosfather/bingo/utils"
 )
 
 type MvcEngine struct {
 	router  mvc.DefaultRouter
 	port    int
+	context *ApplicationContext
 }
 
 func (this *MvcEngine) Init(context *ApplicationContext) {
+	this.context=context
 	this.router.SetLog(context.GetLog("bingo.router"))
 	this.router.Init(context.factory)
 	this.port = 8990
@@ -36,6 +39,19 @@ func (this *MvcEngine) AddHandler(url string, handler mvc.HttpMethodHandler){
 	this.router.AddRouter(&rule)
 }
 
+func (this *MvcEngine)AddController(c mvc.HttpController){
+    if c!=nil {
+    	c.SetBeanFactory(this.context)
+    	c.Init()
+    	url:=c.GetUrl()
+    	if url=="" {
+    		url="/"+utils.GetRealType(c).Name()
+		}
+    	this.AddHandler(url,c.(mvc.HttpMethodHandler))
+	}
+
+}
+
 func (this *MvcEngine) AddInterceptor(h mvc.CustomHandlerInterceptor) {
 	if h != nil {
 		this.router.AddInterceptor(h)
@@ -49,3 +65,14 @@ func (this *MvcEngine) run(){
 
 //加载handler
 type OnLoadHandler func(mvc *MvcEngine,context *ApplicationContext) bool
+
+type rootController struct {
+	mvc.SimpleController
+}
+
+func (this *rootController) GetUrl()string {
+	return "/"
+}
+func (this *rootController) Get(c mvc.Context, p interface{}) (interface{}, mvc.BingoError){
+	return "<h1>hello bingo!</h1>",nil
+}

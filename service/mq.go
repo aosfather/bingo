@@ -13,7 +13,8 @@ import (
 	"time"
 
 	"github.com/streadway/amqp"
-	"log"
+	"github.com/aosfather/bingo/utils"
+
 )
 
 type MQExchangType string
@@ -36,6 +37,11 @@ type Receiver interface {
 
 type RabbitMQConnect struct {
 	connection *amqp.Connection
+	logger utils.Log
+}
+
+func (this *RabbitMQConnect)SetLogger(l utils.Log){
+	this.logger=l
 }
 
 func (this *RabbitMQConnect) Connect(mqurl string) {
@@ -50,7 +56,7 @@ func (this *RabbitMQConnect) Connect(mqurl string) {
 
 func (this *RabbitMQConnect)failOnErr(err error, text string) {
 	if err != nil {
-		log.Fatalln(text)
+		this.logger.Error("%s,%s",text,err.Error())
 		panic(err.Error())
 	}
 }
@@ -83,6 +89,7 @@ type RabbitMQ struct {
 	exchangeName string        // exchange的名称
 	exchangeType MQExchangType // exchange的类型
 	receivers    []Receiver
+	logger utils.Log
 }
 
 
@@ -110,7 +117,7 @@ func (this *RabbitMQ) startListen() {
 
 	this.wg.Wait()
 
-	log.Println("所有处理queue的任务都意外退出了")
+	this.logger.Error("所有处理queue的任务都意外退出了")
 }
 
 func (this *RabbitMQ) RegisterReceiver(r Receiver) {
@@ -198,7 +205,7 @@ func (this *RabbitMQ) listen(receiver Receiver) {
 		// 通过重试可以成功的操作，那么这个时候是需要重试的
 		// 直到数据处理成功后再返回，然后才会回复rabbitmq ack
 		for !receiver.OnReceive(msg.Body) {
-			log.Println("receiver 数据处理失败，将要重试")
+			this.logger.Error("receiver 数据处理失败，将要重试")
 			time.Sleep(1 * time.Second)
 		}
 
