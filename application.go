@@ -10,6 +10,7 @@ import (
 	"github.com/aosfather/bingo/utils"
 	"github.com/aosfather/bingo/sql"
 	"github.com/aosfather/bingo/mvc"
+
 )
 
 
@@ -119,4 +120,37 @@ func (this *Application) Load(file string) {
 	this.logfactory=&utils.LogFactory{}
 	this.logfactory.SetConfig(utils.LogConfig{true,this.config["bingo.log.file"]})
 	this.router.SetLog(this.logfactory.GetLog("bingo.router"))
+}
+
+
+type TApplication struct {
+	Name    string
+	context ApplicationContext
+	mvc MvcEngine
+	onload OnLoad
+	loadHandler OnLoadHandler
+}
+func (this *TApplication)SetHandler(load OnLoad,handler OnLoadHandler){
+	this.onload=load
+	this.loadHandler=handler
+}
+
+func (this *TApplication)Run(file string){
+	this.context.init(file)
+	//加载factory
+    if this.onload!=nil {
+    	if !this.onload(&this.context){
+    		panic("load service error! please check onload function")
+
+		}
+	}
+	this.mvc.Init(&this.context)
+	//加载controller
+	if this.loadHandler!=nil {
+		if !this.loadHandler(&this.mvc,&this.context){
+			panic("load http handler error! please check OnLoadHandler function")
+		}
+	}
+	this.mvc.run()
+
 }

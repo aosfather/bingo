@@ -49,6 +49,7 @@ func (this *ApplicationContext)GetService(name string) interface{} {
    if name!="" {
    	   return this.services[name]
    }
+   return nil
 }
 
 func (this *ApplicationContext) getProperty(key string) string {

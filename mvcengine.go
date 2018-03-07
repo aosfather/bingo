@@ -3,6 +3,7 @@ package bingo
 import (
 	"github.com/aosfather/bingo/mvc"
 	"strconv"
+	"net/http"
 )
 
 type MvcEngine struct {
@@ -35,6 +36,16 @@ func (this *MvcEngine) AddHandler(url string, handler mvc.HttpMethodHandler){
 	this.router.AddRouter(&rule)
 }
 
+func (this *MvcEngine) AddInterceptor(h mvc.CustomHandlerInterceptor) {
+	if h != nil {
+		this.router.AddInterceptor(h)
+	}
+
+}
+
+func (this *MvcEngine) run(){
+	http.ListenAndServe(":"+strconv.Itoa(this.port), &this.router)
+}
 
 //加载handler
 type OnLoadHandler func(mvc *MvcEngine,context *ApplicationContext) bool
