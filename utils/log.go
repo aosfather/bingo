@@ -26,10 +26,11 @@ type LogFactory struct {
 
 
 func (this *LogFactory)SetConfig(config LogConfig) {
+
 	logFile,err:= os.OpenFile(config.FileName,os.O_RDWR|os.O_APPEND|os.O_CREATE, os.ModeAppend)
 	log.Println("open log file",config.FileName)
 	if err!=nil {
-		log.Fatal("openfile error!",err.Error())
+		log.Println("open log file error!",err.Error())
 	}else {
 		this.logfile = logFile
 		this.l = log.New(this.logfile, "", log.LstdFlags)
