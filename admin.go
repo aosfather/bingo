@@ -26,11 +26,8 @@ func (this *adminService)ServeHTTP(writer http.ResponseWriter, request *http.Req
 
 //执行shutdown操作
 func (this *adminService)doShutDown(writer http.ResponseWriter) {
-
-	//执行自定义
-	if this.application.onShutdown!=nil {
-		this.application.onShutdown()
-	}
+    writer.Write([]byte("shutdown!"))
+	this.application.processShutdown()
 }
 
 type OnDestoryHandler func() bool //shutdown的handler，用于处理关闭服务的自定义动作

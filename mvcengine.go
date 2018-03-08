@@ -11,6 +11,7 @@ type MvcEngine struct {
 	router  mvc.DefaultRouter
 	port    int
 	context *ApplicationContext
+	server *http.Server
 }
 
 func (this *MvcEngine) Init(context *ApplicationContext) {
@@ -60,8 +61,19 @@ func (this *MvcEngine) AddInterceptor(h mvc.CustomHandlerInterceptor) {
 }
 
 func (this *MvcEngine) run(){
-	http.ListenAndServe(":"+strconv.Itoa(this.port), &this.router)
+	if this.server!=nil {
+		return
+	}
+	this.server= &http.Server{Addr: ":"+strconv.Itoa(this.port), Handler: &this.router}
+	this.server.ListenAndServe()
 }
+
+func (this *MvcEngine)shutdown(){
+	if this.server!=nil {
+		this.server.Shutdown(nil)
+	}
+}
+
 
 //加载handler
 type OnLoadHandler func(mvc *MvcEngine,context *ApplicationContext) bool

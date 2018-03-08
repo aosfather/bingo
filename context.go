@@ -16,6 +16,13 @@ type ApplicationContext struct {
 	services map[string]interface{}
 }
 
+func (this *ApplicationContext) shutdown(){
+
+	//关闭所有service
+
+	this.logfactory.Close()
+
+}
 func (this *ApplicationContext)GetLog(module string)utils.Log {
 	return this.logfactory.GetLog(module)
 }

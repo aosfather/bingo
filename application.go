@@ -11,6 +11,8 @@ import (
 	"github.com/aosfather/bingo/sql"
 	"github.com/aosfather/bingo/mvc"
 
+	"syscall"
+	"os/signal"
 )
 
 
@@ -141,6 +143,7 @@ func (this *TApplication)SetOnDestoryHandler(h OnDestoryHandler){
 }
 
 func (this *TApplication)Run(file string){
+	go this.signalListen()
 	this.context.init(file)
 	//加载factory
     if this.onload!=nil {
@@ -158,5 +161,32 @@ func (this *TApplication)Run(file string){
 		}
 	}
 	this.mvc.run()
+
+}
+
+//监听被kill的信号，当被kill的时候执行处理
+func (this *TApplication) signalListen() {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM, syscall.SIGUSR1, syscall.SIGUSR2)
+	//for {
+		s := <-c
+		//收到信号后的处理，这里只是输出信号内容，可以做一些更有意思的事
+		this.context.GetLog("bingo").Info("get signal:%s", s)
+		this.processShutdown()
+
+	//}
+}
+
+func (this *TApplication) processShutdown(){
+    //处理关闭操作
+    this.mvc.shutdown()
+    //关闭service
+    this.context.shutdown()
+    //处理自定义关闭操作
+	if this.onShutdown!=nil {
+		this.onShutdown()
+	}
+
+	os.Exit(0)
 
 }
