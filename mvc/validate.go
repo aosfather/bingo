@@ -57,7 +57,9 @@ type ValidateManager struct {
 	factory ValidaterFactory
 	caches  map[string]*Validater
 }
-
+func (this *ValidateManager) GetFactory() ValidaterFactory{
+	return this.factory
+}
 func (this *ValidateManager) Init(factory ValidaterFactory) {
 	if this.factory == nil {
 		this.factory = factory

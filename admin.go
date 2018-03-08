@@ -5,6 +5,9 @@ import (
 	"strconv"
 )
 
+const (
+	_DEFAULT_ADMIN_PORT=18990
+)
 type adminService struct {
 	application *TApplication
 }

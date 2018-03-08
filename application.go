@@ -129,10 +129,15 @@ type TApplication struct {
 	mvc MvcEngine
 	onload OnLoad
 	loadHandler OnLoadHandler
+	onShutdown OnDestoryHandler
 }
 func (this *TApplication)SetHandler(load OnLoad,handler OnLoadHandler){
 	this.onload=load
 	this.loadHandler=handler
+}
+
+func (this *TApplication)SetOnDestoryHandler(h OnDestoryHandler){
+	this.onShutdown=h
 }
 
 func (this *TApplication)Run(file string){
