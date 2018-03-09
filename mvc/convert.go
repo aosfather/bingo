@@ -134,18 +134,33 @@ func parseRequest(logger utils.Log,request *http.Request, target interface{}) {
 		defer request.Body.Close()
 		if err == nil {
 			parameters := make(map[string]interface{})
-			json.Unmarshal(input, &parameters)
+			err=json.Unmarshal(input, &parameters)
+			if err!=nil {
+				logger.Error("parse request body as json error:%s",err)
+			}
+			logger.Debug("%v",parameters)
 			if sr, ok := target.(MutiStruct); ok {
 				if request.Form == nil {
 					request.ParseForm()
 				}
+
 				utils.FillStructByForm(request.Form, sr)
 				utils.FillStruct(parameters, sr.GetData())
 
 			} else {
+				if request.Form == nil {
+					request.ParseForm()
+				}
+				utils.FillStructByForm(request.Form, target)
 				utils.FillStruct(parameters, target)
+				//err=json.Unmarshal(input,target)
+				//if err!=nil {
+				//	logger.Error("parse request body as json error:%s",err)
+				//}
 			}
 
+		}else {
+			logger.Debug("read request body error:%s",err)
 		}
 
 	} else { //标准form的处理
