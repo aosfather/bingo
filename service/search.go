@@ -25,22 +25,22 @@ type Field struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
-type targetObject struct {
+type TargetObject struct {
 	Id   string `json:"id"`
 	Data string `json:"data"`
 }
-type sourceObject struct {
-	targetObject
+type SourceObject struct {
+	TargetObject
 	Fields []Field `json:"fields"`
 }
 
-type searchEngine struct {
+type SearchEngine struct {
 	indexs map[string]*searchIndex
 	client *redis.Client
 	logger utils.Log
 }
 
-func (this *searchEngine) Init(context *bingo.ApplicationContext) {
+func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
 	db, err := strconv.Atoi(context.GetPropertyFromConfig("bingo.search.db"))
 	if err != nil {
 		db = 0
@@ -54,7 +54,7 @@ func (this *searchEngine) Init(context *bingo.ApplicationContext) {
 	this.logger = context.GetLog("bingo_search")
 }
 
-func (this *searchEngine) CreateIndex(name string) *searchIndex {
+func (this *SearchEngine) CreateIndex(name string) *searchIndex {
 	if name != "" {
 		index := this.indexs[name]
 		if index == nil {
@@ -67,7 +67,7 @@ func (this *searchEngine) CreateIndex(name string) *searchIndex {
 	return nil
 }
 
-func (this *searchEngine) LoadSource(name string, obj *sourceObject) {
+func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
 
 	index := this.CreateIndex(name)
 	if index != nil {
@@ -76,7 +76,7 @@ func (this *searchEngine) LoadSource(name string, obj *sourceObject) {
 
 }
 
-func (this *searchEngine) Search(name string, input ...Field) []targetObject {
+func (this *SearchEngine) Search(name string, input ...Field) []TargetObject {
 	if name != "" {
 		index := this.indexs[name]
 		if index != nil {
@@ -90,11 +90,11 @@ func (this *searchEngine) Search(name string, input ...Field) []targetObject {
 
 type searchIndex struct {
 	name   string
-	engine *searchEngine
+	engine *SearchEngine
 }
 
 //搜索信息
-func (this *searchIndex) Search(input ...Field) []targetObject {
+func (this *searchIndex) Search(input ...Field) []TargetObject {
 	//搜索索引
 	var searchkeys []string
 	for _, f := range input {
@@ -112,11 +112,11 @@ func (this *searchIndex) Search(input ...Field) []targetObject {
 		datas, err1 := this.engine.client.HMGet(this.name, targetkeys...).Result()
 		if err1 == nil && len(datas) > 0{
 
-				var targets []targetObject
+				var targets []TargetObject
 
 				for _, v := range datas {
 					if v != nil {
-						t := targetObject{}
+						t := TargetObject{}
 						json.Unmarshal([]byte(fmt.Sprintf("%v", v)), &t)
 						targets = append(targets, t)
 					}
@@ -134,7 +134,7 @@ func (this *searchIndex) Search(input ...Field) []targetObject {
 }
 
 //刷新索引，加载信息到存储中
-func (this *searchIndex) LoadObject(obj *sourceObject) {
+func (this *searchIndex) LoadObject(obj *SourceObject) {
 	data, _ := json.Marshal(obj)
 	key := getMd5str(string(data))
 	//1、放入数据到目标集合中

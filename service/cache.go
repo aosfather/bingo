@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 
 	"github.com/go-redis/redis"
+	"github.com/aosfather/bingo/utils"
 )
 
 type ListObject []interface{}
@@ -90,7 +91,7 @@ func (this *RedisCache) GetAsList(key string, typeTemplate Object) ListObject {
 		var index int64
 		for index = 0; index < length; index++ {
 			value, _ := this.client.LIndex(key, index).Result()
-			obj := CreateObjByType(GetRealType(typeTemplate))
+			obj := utils.CreateObjByType(utils.GetRealType(typeTemplate))
 			json.Unmarshal([]byte(value), obj)
 			results[index] = obj
 		}
@@ -116,7 +117,7 @@ func (this *RedisCache) GetAsMap(key string, typeTemplate Object) map[string]Obj
 		if maps != nil {
 			results := make(map[string]Object, len(maps))
 			for key, value := range maps {
-				obj := CreateObjByType(GetRealType(typeTemplate))
+				obj := utils.CreateObjByType(utils.GetRealType(typeTemplate))
 				json.Unmarshal([]byte(value), obj)
 				results[key] = obj
 			}
