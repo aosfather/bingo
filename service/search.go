@@ -27,7 +27,7 @@ type Field struct {
 }
 type TargetObject struct {
 	Id   string `json:"id"`
-	Data string `json:"data"`
+	Data []byte `json:"data"`
 }
 type SourceObject struct {
 	TargetObject

@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-redis/redis"
 	"github.com/aosfather/bingo/utils"
+	"time"
 )
 
 type ListObject []interface{}
@@ -157,4 +158,6 @@ func (this *RedisCache) SetNx(key string, value Object, extime int64) {
 
 }
 
-
+func ToSecond(second int64) time.Duration {
+	return time.Second*time.Duration(second)
+}
