@@ -104,5 +104,9 @@ func (this *ApplicationContext) initLogFactory(){
 	this.logfactory.SetConfig(utils.LogConfig{true,this.config["bingo.log.file"]})
 }
 
+func (this *ApplicationContext)initServices(){
+
+}
+
 //load函数，如果加载成功返回true，否则返回FALSE
 type OnLoad func(context *ApplicationContext)bool
