@@ -43,6 +43,7 @@ func (this *MvcEngine) AddHandler(url string, handler mvc.HttpMethodHandler){
 func (this *MvcEngine)AddController(c mvc.HttpController){
     if c!=nil {
     	c.SetBeanFactory(this.context)
+    	this.context.holder.ProcessValueTag(c)
     	this.context.services.InjectObject(c)
     	c.Init()
     	url:=c.GetUrl()

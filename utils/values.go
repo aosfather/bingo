@@ -11,12 +11,30 @@ import "reflect"
 
  )
 
+ type StoreFunction func(key string) string
  type ValueStore interface{
  	GetProperty(key string) string
  }
+
+ type defaultStore struct {
+ 	function StoreFunction
+ }
+ func(this *defaultStore)GetProperty(key string) string{
+ 	if this.function!=nil {
+ 		return this.function(key)
+	}
+	return ""
+ }
+
  type ValuesHolder struct{
  	store ValueStore
  }
+
+ func(this *ValuesHolder)InitByFunction(f StoreFunction){
+ 	s:=defaultStore{f}
+ 	this.Init(&s)
+ }
+
  func (this *ValuesHolder) Init(s ValueStore) {
  	if s!=nil {
  		this.store=s
@@ -33,6 +51,10 @@ import "reflect"
 		   fieldType := field.Type()
 		   tag := reflectType.Elem().Field(i).Tag.Get(_TAG_VALUE)
 		   if tag!="" {
+			   if !field.CanSet() {
+				   panic("can not set field "+reflectType.Elem().Field(i).Name)
+				   return
+			   }
 		   	  this.setValue(field,fieldType,this.store.GetProperty(tag))
 		   }
 	   }

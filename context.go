@@ -15,6 +15,7 @@ type ApplicationContext struct {
 	factory *sql.SessionFactory
 	//services map[string]interface{}
 	services utils.InjectMan
+	holder utils.ValuesHolder
 }
 
 func (this *ApplicationContext) shutdown(){
@@ -44,13 +45,9 @@ func (this *ApplicationContext) GetPropertyFromConfig(key string) string {
 
 func (this *ApplicationContext) RegisterService(name string,service interface{}) {
 	if name!="" && service!=nil {
-
-		//instance:=this.services[name]
-		//if instance==nil {
-		//	this.services[name]=service
-		//}
 		instance:=this.services.GetObjectByName(name)
 		if instance==nil {
+			this.holder.ProcessValueTag(service)
 			this.services.AddObjectByName(name,service)
 		}
 	}
@@ -88,6 +85,7 @@ func(this *ApplicationContext) init(file string){
     //this.services=make(map[string]interface{})
 	this.services.Init(nil)
 	this.services.AddObject(this)
+	this.holder.InitByFunction(this.GetPropertyFromConfig)
 	this.initLogFactory()
 	this.initSessionFactory()
 }
