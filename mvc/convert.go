@@ -133,31 +133,30 @@ func parseRequest(logger utils.Log,request *http.Request, target interface{}) {
 		logger.Debug(string(input))
 		defer request.Body.Close()
 		if err == nil {
-			parameters := make(map[string]interface{})
-			err=json.Unmarshal(input, &parameters)
-			if err!=nil {
-				logger.Error("parse request body as json error:%s",err)
+			if request.Form == nil {
+				request.ParseForm()
 			}
-			logger.Debug("%v",parameters)
+			//parameters := make(map[string]interface{})
+			//err=json.Unmarshal(input, &parameters)
+			//if err!=nil {
+			//	logger.Error("parse request body as json error:%s",err)
+			//}
+			//logger.Debug("%v",parameters)
+
+			utils.FillStructByForm(request.Form, target)
+
+			jsonTarget:=target
 			if sr, ok := target.(MutiStruct); ok {
-				if request.Form == nil {
-					request.ParseForm()
-				}
 
-				utils.FillStructByForm(request.Form, sr)
-				utils.FillStruct(parameters, sr.GetData())
+				jsonTarget=sr.GetData()
 
-			} else {
-				if request.Form == nil {
-					request.ParseForm()
-				}
-				utils.FillStructByForm(request.Form, target)
-				utils.FillStruct(parameters, target)
-				//err=json.Unmarshal(input,target)
-				//if err!=nil {
-				//	logger.Error("parse request body as json error:%s",err)
-				//}
 			}
+
+				err=json.Unmarshal(input,jsonTarget)
+				if err!=nil {
+					logger.Error("parse request body as json error:%s",err)
+				}
+
 
 		}else {
 			logger.Debug("read request body error:%s",err)
