@@ -13,7 +13,8 @@ type ApplicationContext struct {
 	config  map[string]string
 	logfactory *utils.LogFactory
 	factory *sql.SessionFactory
-	services map[string]interface{}
+	//services map[string]interface{}
+	services utils.InjectMan
 }
 
 func (this *ApplicationContext) shutdown(){
@@ -43,9 +44,14 @@ func (this *ApplicationContext) GetPropertyFromConfig(key string) string {
 
 func (this *ApplicationContext) RegisterService(name string,service interface{}) {
 	if name!="" && service!=nil {
-		instance:=this.services[name]
+
+		//instance:=this.services[name]
+		//if instance==nil {
+		//	this.services[name]=service
+		//}
+		instance:=this.services.GetObjectByName(name)
 		if instance==nil {
-			this.services[name]=service
+			this.services.AddObjectByName(name,service)
 		}
 	}
 
@@ -54,7 +60,8 @@ func (this *ApplicationContext) RegisterService(name string,service interface{})
 
 func (this *ApplicationContext)GetService(name string) interface{} {
    if name!="" {
-   	   return this.services[name]
+   	   //return this.services[name]
+   	   return this.services.GetObjectByName(name)
    }
    return nil
 }
@@ -78,7 +85,9 @@ func(this *ApplicationContext) init(file string){
 	if this.config == nil {
 		this.config = make(map[string]string)
 	}
-    this.services=make(map[string]interface{})
+    //this.services=make(map[string]interface{})
+	this.services.Init(nil)
+	this.services.AddObject(this)
 	this.initLogFactory()
 	this.initSessionFactory()
 }

@@ -24,6 +24,32 @@ func(this *InjectMan)Init(h OnServiceNotFoundHandler){
 	this.serviceMapping=make(map[string]Object)
 }
 
+func (this *InjectMan) GetObjectByName(name string) Object {
+	if name!="" {
+		return this.serviceMapping[name]
+	}
+
+	return nil
+}
+
+func (this *InjectMan) GetObject(t reflect.Type)Object {
+	for _,v:=range this.services {
+		if t.AssignableTo(reflect.TypeOf(v)) {
+			return v
+		}
+	}
+
+	return nil
+}
+
+func (this *InjectMan) AssignObject(o Object) {
+	if o!=nil&&IsStructPtr(o) {
+		t := GetRealType(o)
+		o = this.GetObject(t)
+	}
+}
+
+
 func (this *InjectMan) AddObject(o Object){
    if o!=nil&&IsStructPtr(o) {
    	  this.services=append(this.services,o)
@@ -83,19 +109,22 @@ func (this *InjectMan) setValue(field reflect.Value,t reflect.Type,fname,sname s
 		}
 		field.Set(reflect.ValueOf(v))
 	}else {
-		finded:=false
-		for _,v:=range this.services {
-			if t.AssignableTo(reflect.TypeOf(v)) {
-				field.Set(reflect.ValueOf(v))
-				finded=true
-			}
+		if t.Kind() == reflect.Map {
+			field.Set(reflect.MakeMap(t))
+			return
 		}
 
-		if !finded&&this.handler!=nil {
-			v:=this.handler(fname,t.Name())
+		//其它类型，轮询所有的service
+
+		v:=this.GetObject(t)
+		if v==nil {
+			if this.handler!=nil {
+				v:=this.handler(fname,t.Name())
+				field.Set(reflect.ValueOf(v))
+			}
+		} else {
 			field.Set(reflect.ValueOf(v))
 		}
-
 
 	}
 
