@@ -1,6 +1,9 @@
 package utils
 
-import "reflect"
+import (
+	"reflect"
+	"strings"
+)
 
 /*
 提供属性注入
@@ -51,11 +54,15 @@ import "reflect"
 		   fieldType := field.Type()
 		   tag := reflectType.Elem().Field(i).Tag.Get(_TAG_VALUE)
 		   if tag!="" {
-			   if !field.CanSet() {
-				   panic("can not set field "+reflectType.Elem().Field(i).Name)
-				   return
+		   	   if field.CanSet(){
+				   this.setValue(field,fieldType,this.store.GetProperty(tag))
+			   }else{
+			   	   //查找setmethod进行设置
+			   	   fieldName:=reflectType.Elem().Field(i).Name
+				   println("use set method,beacause can not set field "+fieldName)
+				   this.setValueByMethod(reflectValue,fieldType,fieldName,this.store.GetProperty(tag))
 			   }
-		   	  this.setValue(field,fieldType,this.store.GetProperty(tag))
+
 		   }
 	   }
 
@@ -65,6 +72,28 @@ import "reflect"
    }
  }
 
+ func (this *ValuesHolder)setValueByMethod(v reflect.Value,ft reflect.Type,fieldName string,value string){
+	 methodName := "Set" + strings.ToUpper(fieldName[:1]) + fieldName[1:]
+	 rm:=v.MethodByName(methodName)
+	 if rm.IsValid(){
+		 bv:=BingoString(value)
+	 	 var rv reflect.Value
+		 switch(ft.Kind()) {
+		 case reflect.String : rv=reflect.ValueOf(value)
+		 case reflect.Bool:
+			 vbool,_:=bv.Bool()
+			 rv=reflect.ValueOf(vbool)
+		 case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			 vint,_:=bv.Int64()
+			 rv=reflect.ValueOf(vint)
+		 case reflect.Float64, reflect.Float32:
+			 vfloat,_:=bv.Float64()
+			 rv=reflect.ValueOf(vfloat)
+		 }
+
+		 rm.Call([]reflect.Value{rv})
+	 }
+ }
  //根据类型将字符串转换成指定的值进行设置
 func (this *ValuesHolder)setValue(v reflect.Value,t reflect.Type,value string){
 	bv:=BingoString(value)
