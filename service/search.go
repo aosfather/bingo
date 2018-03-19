@@ -125,7 +125,7 @@ func (this *SearchEngine) FetchByPage(request string,page int64) *PageSearchResu
 }
 
 func (this *SearchEngine)createRequst(name string,keys... string) string {
-    key:=getUuid(name)
+    key:= getSearchRequestUuid(name)
 	var datas []interface{}
 
 	for _,v:=range keys {
@@ -258,6 +258,6 @@ func getMd5str(value string) string {
 
 }
 
-func getUuid(prefix string) string {
+func getSearchRequestUuid(prefix string) string {
 	return fmt.Sprintf("%s:%d",prefix, time.Now().UnixNano())
 }
