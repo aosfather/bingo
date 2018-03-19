@@ -8,6 +8,8 @@ import (
 	"github.com/go-redis/redis"
 	"strconv"
 	"crypto/md5"
+	"time"
+	"strings"
 )
 
 /**
@@ -25,6 +27,13 @@ type Field struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
+
+type PageSearchResult struct {
+	Id string `json:"uuid"`    //查询的请求id
+	Index int64 `json:"page"`  //页码
+	Data []TargetObject
+}
+
 type TargetObject struct {
 	Id   string `json:"id"`
 	Data json.RawMessage `json:"data"`
@@ -38,6 +47,7 @@ type SearchEngine struct {
 	indexs map[string]*searchIndex
 	client *redis.Client
 	logger utils.Log
+	pageSize int64
 }
 
 func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
@@ -46,6 +56,13 @@ func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
 	if err != nil {
 		db = 0
 	}
+
+	size, err := strconv.Atoi(context.GetPropertyFromConfig("service.search.pagesize"))
+	if err != nil {
+		size = 20 //默认大小20条
+	}
+	this.pageSize=int64(size)
+
 	this.client = redis.NewClient(&redis.Options{
 		Addr:     context.GetPropertyFromConfig("service.search.redis"),
 		Password: "", // no password set
@@ -78,11 +95,80 @@ func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
 
 }
 
-func (this *SearchEngine) Search(name string, input ...Field) []TargetObject {
+func (this *SearchEngine) FetchByPage(request string,page int64) *PageSearchResult {
+	if request != "" {
+		//获取request的name
+		index:=strings.Index(request,":")
+		print(index)
+		if index<0 {
+			this.logger.Error("pagerequest's index name not found !")
+			return nil  //找不到对应的索引类型
+		}
+
+		name:=request[0:index]
+		if page<=0 {
+			page=1
+		}
+		startIndex:=(page-1) * this.pageSize+1  //从1开始计数
+		endIndex:=   page*this.pageSize
+
+		keys,err:=this.client.LRange(request,startIndex,endIndex).Result()
+		if err!=nil {
+			this.logger.Debug("no content by page!")
+			return nil
+		}
+
+		return &PageSearchResult{request,page,this.fetch(name,keys...)}
+	}
+
+	return nil
+}
+
+func (this *SearchEngine)createRequst(name string,keys... string) string {
+    key:=getUuid(name)
+	var datas []interface{}
+
+	for _,v:=range keys {
+		datas=append(datas,v)
+	}
+
+	this.client.LPush(key,datas...)
+	fmt.Println("%v",datas)
+    this.client.Expire(key,time.Duration(30)*time.Minute)//30分钟后失效
+	return key
+}
+//获取内容
+func (this *SearchEngine) fetch(name string,keys ... string) []TargetObject{
+	datas, err1 := this.client.HMGet(name, keys...).Result()
+	if err1 == nil && len(datas) > 0{
+
+		var targets []TargetObject
+
+		for _, v := range datas {
+			if v != nil {
+				t := TargetObject{}
+				json.Unmarshal([]byte(fmt.Sprintf("%v", v)), &t)
+				targets = append(targets, t)
+			}
+		}
+
+		return targets
+
+	} else {
+		this.logger.Error("get data by index error!%s", err1.Error())
+	}
+
+	return nil
+}
+
+
+func (this *SearchEngine) Search(name string, input ...Field) *PageSearchResult {
 	if name != "" {
 		index := this.indexs[name]
 		if index != nil {
-			return index.Search(input...)
+			r,data:= index.Search(input...)
+			return &PageSearchResult{r,1,data}
+
 		}
 		this.logger.Info("not found index %s", name)
 	}
@@ -96,7 +182,7 @@ type searchIndex struct {
 }
 
 //搜索信息
-func (this *searchIndex) Search(input ...Field) []TargetObject {
+func (this *searchIndex) Search(input ...Field) (string,[]TargetObject) {
 	//搜索索引
 	var searchkeys []string
 	for _, f := range input {
@@ -107,32 +193,37 @@ func (this *searchIndex) Search(input ...Field) []TargetObject {
 	targetkeys, err := result.Result()
 	if err != nil {
 		this.engine.logger.Error("inter key error!%s", err.Error())
-		return nil
+		return "",nil
 	}
 	if len(targetkeys) > 0 {
+		//生成request
+		r:=this.engine.createRequst(this.name,targetkeys...)
+		//写入到列表中
+        query:=targetkeys[1:this.engine.pageSize]
 		//根据最后的id，从data中取出所有命中的元素
-		datas, err1 := this.engine.client.HMGet(this.name, targetkeys...).Result()
-		if err1 == nil && len(datas) > 0{
-
-				var targets []TargetObject
-
-				for _, v := range datas {
-					if v != nil {
-						t := TargetObject{}
-						json.Unmarshal([]byte(fmt.Sprintf("%v", v)), &t)
-						targets = append(targets, t)
-					}
-				}
-
-				return targets
-
-		} else {
-			this.engine.logger.Error("get data by index error!%s", err1.Error())
-		}
+		return r,this.engine.fetch(this.name,query...)
+		//datas, err1 := this.engine.client.HMGet(this.name, targetkeys...).Result()
+		//if err1 == nil && len(datas) > 0{
+		//
+		//		var targets []TargetObject
+		//
+		//		for _, v := range datas {
+		//			if v != nil {
+		//				t := TargetObject{}
+		//				json.Unmarshal([]byte(fmt.Sprintf("%v", v)), &t)
+		//				targets = append(targets, t)
+		//			}
+		//		}
+		//
+		//		return targets
+		//
+		//} else {
+		//	this.engine.logger.Error("get data by index error!%s", err1.Error())
+		//}
 
 	}
 
-	return nil
+	return "",nil
 }
 
 //刷新索引，加载信息到存储中
@@ -165,4 +256,8 @@ func getMd5str(value string) string {
 
 	return md5str1
 
+}
+
+func getUuid(prefix string) string {
+	return fmt.Sprintf("%s:%d",prefix, time.Now().UnixNano())
 }
