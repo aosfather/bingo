@@ -119,11 +119,11 @@ func (this *SearchEngine) FetchByPage(request string,page int64) *PageSearchResu
 		endIndex:=   page*this.pageSize
 
 		keys,err:=this.client.LRange(request,startIndex,endIndex).Result()
-		if err!=nil {
+		if err!=nil ||len(keys)==0{
 			this.logger.Debug("no content by page!")
 			return nil
 		}
-
+		go this.client.Expire(request,time.Duration(this.pageLife)*time.Minute)//更新重置失效时间
 		return &PageSearchResult{request,page,this.fetch(name,keys...)}
 	}
 
