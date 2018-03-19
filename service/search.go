@@ -48,6 +48,7 @@ type SearchEngine struct {
 	client *redis.Client
 	logger utils.Log
 	pageSize int64
+	pageLife int64 //分钟
 }
 
 func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
@@ -62,6 +63,12 @@ func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
 		size = 20 //默认大小20条
 	}
 	this.pageSize=int64(size)
+
+	life, err := strconv.Atoi(context.GetPropertyFromConfig("service.search.pagelife"))
+	if err != nil {
+		life = 10 //默认时间10分钟
+	}
+	this.pageLife=int64(life)
 
 	this.client = redis.NewClient(&redis.Options{
 		Addr:     context.GetPropertyFromConfig("service.search.redis"),
@@ -99,7 +106,6 @@ func (this *SearchEngine) FetchByPage(request string,page int64) *PageSearchResu
 	if request != "" {
 		//获取request的name
 		index:=strings.Index(request,":")
-		print(index)
 		if index<0 {
 			this.logger.Error("pagerequest's index name not found !")
 			return nil  //找不到对应的索引类型
@@ -133,8 +139,7 @@ func (this *SearchEngine)createRequst(name string,keys... string) string {
 	}
 
 	this.client.LPush(key,datas...)
-	fmt.Println("%v",datas)
-    this.client.Expire(key,time.Duration(30)*time.Minute)//30分钟后失效
+    this.client.Expire(key,time.Duration(this.pageLife)*time.Minute)//指定x分钟后失效
 	return key
 }
 //获取内容
