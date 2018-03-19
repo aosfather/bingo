@@ -1,7 +1,7 @@
 // bingo project doc.go
 
 /*
-bingo document
+ document
 
 
 

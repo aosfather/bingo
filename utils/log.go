@@ -2,9 +2,9 @@ package utils
 
 import (
 	"log"
-	"os"
 	"runtime"
 	"fmt"
+	"time"
 )
 
 const(
@@ -18,28 +18,47 @@ type LogConfig struct {
 	IsDebug bool
 	FileName string
 }
-type LogFactory struct {
-	loglevel int
-	logfile *os.File
-	l *log.Logger
-	out Output
+
+type logRecord struct {
+	format string
+	objs []interface{}
 }
 
-type Output func(fm string,f...interface{})
+type LogFactory struct {
+	loglevel int
+	logfile *RollingFile
+	l *log.Logger
+	queue *Queue
+	running bool
+}
+
 func (this *LogFactory)SetConfig(config LogConfig) {
-
-	logFile,err:= os.OpenFile(config.FileName,os.O_RDWR|os.O_APPEND|os.O_CREATE, os.ModeAppend)
-	log.Println("open log file",config.FileName)
-	if err!=nil {
-		log.Println("open log file error!",err.Error())
-		this.out=this.outByConsole
-	}else {
-		this.logfile = logFile
-		this.l = log.New(this.logfile, "", log.LstdFlags)
-		this.out=this.outByFile
+	if config.FileName=="" {
+		log.Println("not set log file error! set default file out.log")
+		config.FileName="bingo_out.log"
 	}
+	r:=RollingFile{}
+	r.Filename=config.FileName
+	this.logfile=&r
+	this.l = log.New(this.logfile, "", log.LstdFlags)
 
+	this.queue=NewQueue()
+	this.running=true
+	go this.outThread()
 
+}
+
+func (this *LogFactory)outThread(){
+	for{
+		if v,ok:=this.queue.pop().(*logRecord);ok {
+			this.l.Printf(v.format, v.objs...)
+		}else {
+			time.Sleep(time.Millisecond)
+			if this.running==false {//当设置为不要running的时候，退出循环
+				return
+			}
+		}
+	}
 }
 
 func (this *LogFactory)GetLog(name string)Log {
@@ -47,22 +66,17 @@ func (this *LogFactory)GetLog(name string)Log {
 }
 
 func (this *LogFactory)Close(){
+	this.running=false
 	if this .logfile!=nil {
 		this.logfile.Close()
 	}
 }
 
-func (this *LogFactory) outByConsole(content string,obj ... interface{}){
-	log.Printf(content, obj...)
-}
-
-func (this *LogFactory) outByFile(content string,obj ... interface{}){
-	go this.l.Printf(content, obj...)
-}
 func (this *LogFactory)Write(level int,prefix string,fmt string,obj ...interface{}) {
 	   if level >= this.loglevel { //判断loglevel是否大于指定的level，如果大于则输出，否则直接抛弃
 		   content := this.formatHeader(prefix, level) + fmt + "\n"
-		   this.out(content,obj...)
+		   this.queue.push(&logRecord{content,obj})
+
 	   }
 }
 

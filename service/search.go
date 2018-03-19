@@ -8,6 +8,8 @@ import (
 	"github.com/go-redis/redis"
 	"strconv"
 	"crypto/md5"
+	"time"
+	"strings"
 )
 
 /**
@@ -25,31 +27,55 @@ type Field struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
+
+type PageSearchResult struct {
+	Id string `json:"uuid"`    //查询的请求id
+	Index int64 `json:"page"`  //页码
+	Data []TargetObject
+}
+
 type TargetObject struct {
 	Id   string `json:"id"`
-	Data []byte `json:"data"`
+	Data json.RawMessage `json:"data"`
 }
 type SourceObject struct {
 	TargetObject
-	Fields []Field `json:"fields"`
+	Fields map[string]string `json:"fields"`
 }
 
 type SearchEngine struct {
 	indexs map[string]*searchIndex
 	client *redis.Client
 	logger utils.Log
+	pageSize int64
+	pageLife int64 //分钟
 }
 
 func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
-	db, err := strconv.Atoi(context.GetPropertyFromConfig("bingo.search.db"))
+	fmt.Println("init .....")
+	db, err := strconv.Atoi(context.GetPropertyFromConfig("service.search.db"))
 	if err != nil {
 		db = 0
 	}
+
+	size, err := strconv.Atoi(context.GetPropertyFromConfig("service.search.pagesize"))
+	if err != nil {
+		size = 20 //默认大小20条
+	}
+	this.pageSize=int64(size)
+
+	life, err := strconv.Atoi(context.GetPropertyFromConfig("service.search.pagelife"))
+	if err != nil {
+		life = 10 //默认时间10分钟
+	}
+	this.pageLife=int64(life)
+
 	this.client = redis.NewClient(&redis.Options{
-		Addr:     context.GetPropertyFromConfig("bingo.search.redis"),
+		Addr:     context.GetPropertyFromConfig("service.search.redis"),
 		Password: "", // no password set
 		DB:       db,
 	})
+	fmt.Println(context.GetPropertyFromConfig("service.search.redis"))
 	this.indexs = make(map[string]*searchIndex)
 	this.logger = context.GetLog("bingo_search")
 }
@@ -76,11 +102,78 @@ func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
 
 }
 
-func (this *SearchEngine) Search(name string, input ...Field) []TargetObject {
+func (this *SearchEngine) FetchByPage(request string,page int64) *PageSearchResult {
+	if request != "" {
+		//获取request的name
+		index:=strings.Index(request,":")
+		if index<0 {
+			this.logger.Error("pagerequest's index name not found !")
+			return nil  //找不到对应的索引类型
+		}
+
+		name:=request[0:index]
+		if page<=0 {
+			page=1
+		}
+		startIndex:=(page-1) * this.pageSize+1  //从1开始计数
+		endIndex:=   page*this.pageSize
+
+		keys,err:=this.client.LRange(request,startIndex,endIndex).Result()
+		if err!=nil ||len(keys)==0{
+			this.logger.Debug("no content by page!")
+			return nil
+		}
+		go this.client.Expire(request,time.Duration(this.pageLife)*time.Minute)//更新重置失效时间
+		return &PageSearchResult{request,page,this.fetch(name,keys...)}
+	}
+
+	return nil
+}
+
+func (this *SearchEngine)createRequst(name string,keys... string) string {
+    key:= getSearchRequestUuid(name)
+	var datas []interface{}
+
+	for _,v:=range keys {
+		datas=append(datas,v)
+	}
+
+	this.client.LPush(key,datas...)
+    this.client.Expire(key,time.Duration(this.pageLife)*time.Minute)//指定x分钟后失效
+	return key
+}
+//获取内容
+func (this *SearchEngine) fetch(name string,keys ... string) []TargetObject{
+	datas, err1 := this.client.HMGet(name, keys...).Result()
+	if err1 == nil && len(datas) > 0{
+
+		var targets []TargetObject
+
+		for _, v := range datas {
+			if v != nil {
+				t := TargetObject{}
+				json.Unmarshal([]byte(fmt.Sprintf("%v", v)), &t)
+				targets = append(targets, t)
+			}
+		}
+
+		return targets
+
+	} else {
+		this.logger.Error("get data by index error!%s", err1.Error())
+	}
+
+	return nil
+}
+
+
+func (this *SearchEngine) Search(name string, input ...Field) *PageSearchResult {
 	if name != "" {
 		index := this.indexs[name]
 		if index != nil {
-			return index.Search(input...)
+			r,data:= index.Search(input...)
+			return &PageSearchResult{r,1,data}
+
 		}
 		this.logger.Info("not found index %s", name)
 	}
@@ -94,7 +187,7 @@ type searchIndex struct {
 }
 
 //搜索信息
-func (this *searchIndex) Search(input ...Field) []TargetObject {
+func (this *searchIndex) Search(input ...Field) (string,[]TargetObject) {
 	//搜索索引
 	var searchkeys []string
 	for _, f := range input {
@@ -105,32 +198,37 @@ func (this *searchIndex) Search(input ...Field) []TargetObject {
 	targetkeys, err := result.Result()
 	if err != nil {
 		this.engine.logger.Error("inter key error!%s", err.Error())
-		return nil
+		return "",nil
 	}
 	if len(targetkeys) > 0 {
+		//生成request
+		r:=this.engine.createRequst(this.name,targetkeys...)
+		//写入到列表中
+        query:=targetkeys[1:this.engine.pageSize]
 		//根据最后的id，从data中取出所有命中的元素
-		datas, err1 := this.engine.client.HMGet(this.name, targetkeys...).Result()
-		if err1 == nil && len(datas) > 0{
-
-				var targets []TargetObject
-
-				for _, v := range datas {
-					if v != nil {
-						t := TargetObject{}
-						json.Unmarshal([]byte(fmt.Sprintf("%v", v)), &t)
-						targets = append(targets, t)
-					}
-				}
-
-				return targets
-
-		} else {
-			this.engine.logger.Error("get data by index error!%s", err1.Error())
-		}
+		return r,this.engine.fetch(this.name,query...)
+		//datas, err1 := this.engine.client.HMGet(this.name, targetkeys...).Result()
+		//if err1 == nil && len(datas) > 0{
+		//
+		//		var targets []TargetObject
+		//
+		//		for _, v := range datas {
+		//			if v != nil {
+		//				t := TargetObject{}
+		//				json.Unmarshal([]byte(fmt.Sprintf("%v", v)), &t)
+		//				targets = append(targets, t)
+		//			}
+		//		}
+		//
+		//		return targets
+		//
+		//} else {
+		//	this.engine.logger.Error("get data by index error!%s", err1.Error())
+		//}
 
 	}
 
-	return nil
+	return "",nil
 }
 
 //刷新索引，加载信息到存储中
@@ -142,14 +240,18 @@ func (this *searchIndex) LoadObject(obj *SourceObject) {
 
 	//2、根据field存储到各个对应的索引中
 
-	for _, field := range obj.Fields {
-		this.engine.client.SAdd(this.buildTheKey(field), key)
+	for k, v := range obj.Fields {
+		this.engine.client.SAdd(this.buildTheKeyByItem(k,v), key)
 	}
 
 }
 
 func (this *searchIndex) buildTheKey(f Field) string {
-	return fmt.Sprintf("%s_%s_%s", this.name, f.Key, f.Value)
+	return this.buildTheKeyByItem(f.Key, f.Value)
+}
+
+func (this *searchIndex) buildTheKeyByItem(key,value string) string {
+	return fmt.Sprintf("%s_%s_%s", this.name, key, value)
 }
 
 func getMd5str(value string) string {
@@ -159,4 +261,8 @@ func getMd5str(value string) string {
 
 	return md5str1
 
+}
+
+func getSearchRequestUuid(prefix string) string {
+	return fmt.Sprintf("%s:%d",prefix, time.Now().UnixNano())
 }

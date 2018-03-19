@@ -23,9 +23,14 @@ func HasFieldofStruct(obj interface{}, fieldName string) bool {
 	if err != nil {
 		return false
 	}
+	if rv.IsValid(){
+
+
 	//	rv := reflect.ValueOf(obj)
 	val := rv.FieldByName(fieldName)
 	return val.IsValid()
+	}
+	return  false
 }
 func GetRealType(obj interface{}) reflect.Type {
 	objT := reflect.TypeOf(obj)
