@@ -152,6 +152,7 @@ func (this *TApplication)Run(file string){
 
 		}
 	}
+	this.context.services.Inject()
 	this.mvc.Init(&this.context)
 	//加载controller
 	this.mvc.AddController(&rootController{})
@@ -160,6 +161,7 @@ func (this *TApplication)Run(file string){
 			panic("load http handler error! please check OnLoadHandler function")
 		}
 	}
+
 	this.mvc.run()
 
 }
