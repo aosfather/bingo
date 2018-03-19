@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 	"compress/gzip"
+	"errors"
 )
 
 

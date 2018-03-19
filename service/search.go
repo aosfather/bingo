@@ -27,11 +27,11 @@ type Field struct {
 }
 type TargetObject struct {
 	Id   string `json:"id"`
-	Data []byte `json:"data"`
+	Data json.RawMessage `json:"data"`
 }
 type SourceObject struct {
 	TargetObject
-	Fields []Field `json:"fields"`
+	Fields map[string]string `json:"fields"`
 }
 
 type SearchEngine struct {
@@ -41,15 +41,17 @@ type SearchEngine struct {
 }
 
 func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
-	db, err := strconv.Atoi(context.GetPropertyFromConfig("bingo.search.db"))
+	fmt.Println("init .....")
+	db, err := strconv.Atoi(context.GetPropertyFromConfig("service.search.db"))
 	if err != nil {
 		db = 0
 	}
 	this.client = redis.NewClient(&redis.Options{
-		Addr:     context.GetPropertyFromConfig("bingo.search.redis"),
+		Addr:     context.GetPropertyFromConfig("service.search.redis"),
 		Password: "", // no password set
 		DB:       db,
 	})
+	fmt.Println(context.GetPropertyFromConfig("service.search.redis"))
 	this.indexs = make(map[string]*searchIndex)
 	this.logger = context.GetLog("bingo_search")
 }
@@ -142,14 +144,18 @@ func (this *searchIndex) LoadObject(obj *SourceObject) {
 
 	//2、根据field存储到各个对应的索引中
 
-	for _, field := range obj.Fields {
-		this.engine.client.SAdd(this.buildTheKey(field), key)
+	for k, v := range obj.Fields {
+		this.engine.client.SAdd(this.buildTheKeyByItem(k,v), key)
 	}
 
 }
 
 func (this *searchIndex) buildTheKey(f Field) string {
-	return fmt.Sprintf("%s_%s_%s", this.name, f.Key, f.Value)
+	return this.buildTheKeyByItem(f.Key, f.Value)
+}
+
+func (this *searchIndex) buildTheKeyByItem(key,value string) string {
+	return fmt.Sprintf("%s_%s_%s", this.name, key, value)
 }
 
 func getMd5str(value string) string {
