@@ -150,7 +150,8 @@ func (this *TxSession) ExeSql(sql string, objs ...interface{}) (id int64, affect
 }
 
 func (this *TxSession) QueryByPage(result interface{}, page Page, sql string, objs ...interface{}) []interface{} {
-	stmt, err := this.prepare(sql)
+    //使用真分页的方式实现
+	stmt, err := this.prepare(sql+buildMySqlLimitSql(page))
 	if err != nil {
 		log.Println(err)
 		return nil
@@ -165,21 +166,21 @@ func (this *TxSession) QueryByPage(result interface{}, page Page, sql string, ob
 
 	resultArray := []interface{}{}
 	resultType := utils.GetRealType(result)
-	startIndex := page.getStart()
-	endIndex := page.getEnd()
-	var index int = 0
+	//startIndex := page.getStart()
+	//endIndex := page.getEnd()
+	//var index int = 0
 	cols, _ := rs.Columns()
 	for {
 
 		if rs.Next() {
-			if index < startIndex {
-				index++
-				continue
-			}
-
-			if index >= endIndex {
-				break
-			}
+			//if index < startIndex {
+			//	index++
+			//	continue
+			//}
+			//
+			//if index >= endIndex {
+			//	break
+			//}
 			columnsMap := make(map[string]interface{}, len(cols))
 			refs := make([]interface{}, 0, len(cols))
 			for _, col := range cols {
@@ -194,7 +195,7 @@ func (this *TxSession) QueryByPage(result interface{}, page Page, sql string, ob
 			utils.FillStruct(columnsMap, arrayItem)
 			resultArray = append(resultArray, arrayItem)
 
-			index++
+			//index++
 
 		} else {
 			break

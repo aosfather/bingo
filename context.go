@@ -317,3 +317,4 @@ func (this *BaseDao)InsertAndUpdate(iobj interface{},sqltemplate string,args ...
 	return fmt.Errorf("session is nil")
 
 }
+

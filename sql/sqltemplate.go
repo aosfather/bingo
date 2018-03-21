@@ -23,6 +23,7 @@ import (
 	"reflect"
 	"strings"
 	"github.com/aosfather/bingo/utils"
+	"fmt"
 )
 
 var (
@@ -32,6 +33,19 @@ var (
 
 func init() {
 	table_insert_cache = make(map[string]string)
+}
+//mysql的分页sql生成
+func buildMySqlLimitSql(page Page) string {
+	if page.Index<1 {
+		page.Index=1
+	}
+
+	if page.Size==0 {
+		page.Size=10
+	}
+
+	return fmt.Sprint(" limit %d,%d",page.Size*(page.Index-1),page.Size)
+
 }
 
 func SetTablePreFix(pfix string) {
