@@ -121,6 +121,15 @@ func (this *TxSession) Update(obj interface{}, col ...string) (id int64, affect 
 	return this.ExeSql(sql, args...)
 }
 
+func (this *TxSession) Delete(obj interface{}, col ...string) (id int64, affect int64, err error) {
+	sql, args, err := CreateDeleteSql(obj, col...)
+	if err != nil {
+		return 0, 0, err
+	}
+	log.Println(sql)
+	return this.ExeSql(sql, args...)
+}
+
 func (this *TxSession) ExeSql(sql string, objs ...interface{}) (id int64, affect int64, err error) {
 	stmt, err := this.prepare(sql)
 	if err != nil {

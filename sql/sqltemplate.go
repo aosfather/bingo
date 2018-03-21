@@ -155,6 +155,70 @@ func CreateInserSql(target interface{}) (string, []interface{}, error) {
 
 	return "Insert into " + tagTableName + "(" + sqlFields + ") Values(" + sqlValues + ")", args, nil
 }
+func CreateDeleteSql(target interface{}, col ...string) (string, []interface{}, error) {
+   //类似于查询只是把查询变成了删除
+	objT, objV, err := utils.GetStructTypeValue(target)
+	if err != nil {
+		return "", nil, err
+	}
+	var tagTableName string
+	var sqlwheres string
+	argsWhere := make([]interface{}, 0, 0)
+	whereFields := 0
+	if len(col) != 0 {
+		for _, fieldName := range col {
+			f, b := objT.FieldByName(fieldName)
+			vf := objV.FieldByName(fieldName)
+			if !b || !vf.CanInterface() {
+				continue
+			}
+			colName := utils.GetColName(f)
+			if whereFields > 0 {
+				sqlwheres += " and "
+			}
+			sqlwheres += colName + "=?"
+			argsWhere = append(argsWhere, vf.Interface())
+			whereFields++
+		}
+	}
+
+	for i := 0; i < objT.NumField(); i++ {
+		f := objT.Field(i)
+		vf := objV.Field(i)
+		if !vf.CanInterface() {
+			continue
+		}
+		tagTable := f.Tag.Get("Table")
+		if tagTable != "" {
+			tagTableName = tagTable
+		}
+		if len(col) == 0 {
+			colName := utils.GetColName(f)
+			//对于标识为pk的字段做为条件
+			tagOption := f.Tag.Get("Option")
+			if tagOption != "" {
+				if strings.Index(tagOption, "pk") != -1 {
+					//where的处理
+					if whereFields > 0 {
+						sqlwheres += " and "
+					}
+					sqlwheres += colName + " =?"
+					argsWhere = append(argsWhere, vf.Interface())
+					whereFields++
+				}
+			}
+		}
+
+	}
+
+	//如果没有指定表名就使用默认规则
+	if tagTableName == "" {
+		tagTableName = table_prefix + utils.BingoString(objT.Name()).SnakeString()
+	}
+
+	return "delete from " + tagTableName + " where " + sqlwheres, argsWhere, nil
+
+}
 
 func CreateUpdateSql(target interface{}, col ...string) (string, []interface{}, error) {
 	objT, objV, err := utils.GetStructTypeValue(target)
