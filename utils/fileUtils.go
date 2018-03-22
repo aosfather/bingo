@@ -2,7 +2,8 @@ package utils
 
 import (
 	"os"
-	"syscall"
+	//"syscall"
+	"reflect"
 )
 
 func IsFileExist(file string) bool {
@@ -18,6 +19,12 @@ func chown(name string, info os.FileInfo) error {
 		return err
 	}
 	f.Close()
-	stat := info.Sys().(*syscall.Stat_t)
-	return os_Chown(name, int(stat.Uid), int(stat.Gid))
+	stat := info.Sys() //.(*syscall.Stat_t)
+	//	if
+	if reflect.TypeOf(stat).Elem().Name() == "Stat_t" {
+		uid := reflect.ValueOf(stat).Elem().FieldByName("Uid").Uint()
+		gid := reflect.ValueOf(stat).Elem().FieldByName("Gid").Uint()
+		return os_Chown(name, int(uid), int(gid))
+	}
+	return nil
 }
