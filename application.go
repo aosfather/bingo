@@ -27,7 +27,7 @@ type Application struct {
 
 func (this *Application) Validate(obj interface{}) []mvc.BingoError {
 
-	return this.router.Validate(obj)
+	return mvc.Validate(obj)
 
 }
 

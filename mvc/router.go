@@ -100,22 +100,22 @@ type DefaultRouter struct {
 	routerMap         map[string]*RouterRule
 	interceptor       defaultHandlerInterceptor
 	staticHandler     HttpMethodHandler
-	validates         ValidateManager
+	//validates         ValidateManager
 	sqlsessionfactory *sql.SessionFactory
 	logger utils.Log
 }
 
 func (this *DefaultRouter) Init(sqlfactory *sql.SessionFactory) {
 	this.sqlsessionfactory = sqlfactory
-	this.validates.Init(&DefaultValidaterFactory{})
+	//this.validates.Init(&DefaultValidaterFactory{})
 }
-func (this *DefaultRouter)Validate(obj interface{}) []BingoError{
-	if this.validates.factory==nil {
-		this.validates.Init(&DefaultValidaterFactory{})
-	}
-
-	return this.validates.Validate(obj)
-}
+//func (this *DefaultRouter)Validate(obj interface{}) []BingoError{
+//	if this.validates.factory==nil {
+//		this.validates.Init(&DefaultValidaterFactory{})
+//	}
+//
+//	return this.validates.Validate(obj)
+//}
 
 func (this *DefaultRouter)AddInterceptor(h CustomHandlerInterceptor){
 	if h!=nil {
@@ -175,7 +175,7 @@ func (this *DefaultRouter) doMethod(request *http.Request, handler HttpMethodHan
 	method := request.Method
 	param := handler.GetParameType(method)
 	parseRequest(this.logger,request, param)
-	errors := this.validates.Validate(param)
+	errors := Validate(param)
 	if errors != nil && len(errors) > 0 {
 		var errorText string
 		for _, err := range errors {

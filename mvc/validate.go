@@ -306,3 +306,10 @@ func objIsNotNil(obj interface{}) bool {
 	return true
 
 }
+
+
+var _validateManager=ValidateManager{&DefaultValidaterFactory{},make(map[string]*Validater)}
+
+func Validate(obj interface{}) []BingoError{
+	return _validateManager.Validate(obj)
+}
