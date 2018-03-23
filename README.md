@@ -62,7 +62,6 @@ import (
   "github.com/aosfather/bingo"
   "github.com/aosfather/bingo/mvc"
   "github.com/aosfather/bingo/utils"
-  "runtime"
 )
 type myStruct struct {
      name string `Value:"mytest"`        //自动赋值属性的tag，配置文件存在 mytest的属性值。如果不是公开的，则会调用Setxxx方法进行赋值
