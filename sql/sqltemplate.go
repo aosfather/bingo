@@ -44,7 +44,7 @@ func buildMySqlLimitSql(page Page) string {
 		page.Size=10
 	}
 
-	return fmt.Sprint(" limit %d,%d",page.Size*(page.Index-1),page.Size)
+	return fmt.Sprintf(" limit %d,%d",page.Size*(page.Index-1),page.Size)
 
 }
 
