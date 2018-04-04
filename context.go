@@ -36,6 +36,11 @@ func (this *ApplicationContext) GetSession() *sql.TxSession {
 	}
 	return nil
 }
+
+func (this *ApplicationContext)CreateDao() *BaseDao {
+	return &BaseDao{this}
+}
+
 //不能获取bingo自身的属性，只能获取应用自身的扩展属性
 func (this *ApplicationContext) GetPropertyFromConfig(key string) string {
 	if strings.HasPrefix(key, "bingo.") {

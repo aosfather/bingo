@@ -13,14 +13,13 @@ the simple framework for light web application
 # Road Map
 * 增加脚本插件实现，支持lua脚本
 * 微服务开发支持gRpc
-* 提供session的实现
-* 提供微信公众号开发的支持
-* 提供一些常用open api的封装
 * url映射支持通配处理和对rest模式url的支持
-
 
 ------------------------------------------------
 ## 已经实现的特性
+* 提供session的实现
+* 提供微信公众号开发的支持
+* 提供一些常用open api的封装
 * 新增BaseDao实现，减少应用自行写操作数据库存储的代码
 * 提供了Value，Inject tag，用于自动初始化对象，减少构建和初始化struct的代码
 * 提供一个支持滚动的log实现
