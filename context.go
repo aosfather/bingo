@@ -124,6 +124,9 @@ func (this *ApplicationContext)initServices(){
 //load函数，如果加载成功返回true，否则返回FALSE
 type OnLoad func(context *ApplicationContext)bool
 
+
+
+const MAX_ROW_COUNT = 100000//最大获取条数
 //基础数据操作对象
 type BaseDao struct {
 	context *ApplicationContext
@@ -227,6 +230,11 @@ func (this *BaseDao) Delete(obj utils.Object,cols ... string)(int64,error) {
 	}
 
 	return 0,fmt.Errorf("session is nil")
+}
+
+func (this *BaseDao) QueryAll(obj utils.Object,cols ...string)([]interface{}){
+
+	return this.Query(obj,sql.Page{MAX_ROW_COUNT,1,0},cols...)
 }
 
 func (this *BaseDao) Query(obj utils.Object,page sql.Page,cols ...string)([]interface{}){
