@@ -229,6 +229,13 @@ func (this *BaseDao) Delete(obj utils.Object,cols ... string)(int64,error) {
 	return 0,fmt.Errorf("session is nil")
 }
 
+const _maxsize = 10000
+func (this *BaseDao) QueryAll(obj utils.Object,cols ...string)([]interface{}){
+
+	page:=sql.Page{_maxsize,0,0}
+	return this.Query(obj,page,cols...)
+
+}
 func (this *BaseDao) Query(obj utils.Object,page sql.Page,cols ...string)([]interface{}){
 
 	if obj==nil {
