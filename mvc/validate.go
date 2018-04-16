@@ -55,7 +55,7 @@ type ValidaterFactory interface {
 
 type ValidateManager struct {
 	factory ValidaterFactory
-	caches  map[string]*Validater
+	caches  map[string]Validater
 }
 func (this *ValidateManager) GetFactory() ValidaterFactory{
 	return this.factory
@@ -63,16 +63,16 @@ func (this *ValidateManager) GetFactory() ValidaterFactory{
 func (this *ValidateManager) Init(factory ValidaterFactory) {
 	if this.factory == nil {
 		this.factory = factory
-		this.caches = make(map[string]*Validater)
+		this.caches = make(map[string]Validater)
 	}
 }
 
-func (this *ValidateManager) getValidater(key string) *Validater {
+func (this *ValidateManager) getValidater(key string) Validater {
 	if key != "" {
 		v := this.caches[key]
 		if v == nil {
 			validater := this.factory.CreateValidater(key)
-			v = &validater
+			v = validater
 			this.caches[key] = v
 		}
 		return v
@@ -120,9 +120,11 @@ func (this *ValidateManager) ValidateByrules(obj interface{}, rules ...string) [
 	var errors []BingoError
 	for _, rule := range rules {
 		v := this.getValidater(rule)
-		err := (*v).Validate(obj)
-		if err != nil {
-			errors = append(errors, err)
+		if v!=nil {
+			err := v.Validate(obj)
+			if err != nil {
+				errors = append(errors, err)
+			}
 		}
 
 	}
@@ -308,7 +310,7 @@ func objIsNotNil(obj interface{}) bool {
 }
 
 
-var _validateManager=ValidateManager{&DefaultValidaterFactory{},make(map[string]*Validater)}
+var _validateManager=ValidateManager{&DefaultValidaterFactory{},make(map[string]Validater)}
 
 func Validate(obj interface{}) []BingoError{
 	return _validateManager.Validate(obj)
