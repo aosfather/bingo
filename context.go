@@ -159,6 +159,37 @@ func(this *BaseDao) Insert(obj utils.Object)(int64,error){
 
 }
 
+//插入，返回auto id和错误信息
+func(this *BaseDao) InsertBatch(objs []utils.Object)(ids []int64, e error){
+	if objs==nil||len(objs)==0 {
+		return nil,fmt.Errorf("nil object!")
+	}
+
+	session:=this.context.GetSession()
+	if session!=nil {
+		defer session.Close()
+		session.Begin()
+
+		for _,obj:=range objs {
+			id,_,err:=session.Insert(obj)
+
+			if err!=nil{
+				session.Rollback()
+				return nil,err
+			}
+            ids=append(ids,id)
+		}
+
+         session.Commit()
+         e=nil
+         return
+
+	}
+
+	return nil,fmt.Errorf("session is nil")
+
+}
+
 func (this *BaseDao) Find(obj utils.Object,cols ...string) bool{
 	if obj==nil {
 		return false
@@ -206,6 +237,31 @@ func (this *BaseDao) Update(obj utils.Object,cols ... string)(int64,error) {
 	return 0,fmt.Errorf("session is nil")
 }
 
+func (this *BaseDao) UpdateBatch(objs []utils.Object,cols ... string)(counts[]int64,e error) {
+	if objs==nil||len(objs)==0 {
+		return nil,fmt.Errorf("nil object!")
+	}
+
+	session:=this.context.GetSession()
+	if session!=nil {
+		defer session.Close()
+		session.Begin()
+		for _,obj:=range objs {
+		_,count,err:=session.Update(obj,cols...)
+		if err!=nil {
+			session.Rollback()
+			return nil,err
+		}
+		counts=append(counts,count)
+
+		}
+			session.Commit()
+			e=nil
+			return
+		}
+
+	return nil,fmt.Errorf("session is nil")
+}
 
 func (this *BaseDao) Delete(obj utils.Object,cols ... string)(int64,error) {
 	if obj==nil {
@@ -236,6 +292,24 @@ func (this *BaseDao) QueryAll(obj utils.Object,cols ...string)([]interface{}){
 	return this.Query(obj,page,cols...)
 
 }
+
+func (this *BaseDao) QueryAllBySql(obj utils.Object,sqlTemplate string,args ...interface{})([]interface{}){
+
+	page:=sql.Page{_maxsize,0,0}
+	if obj==nil {
+		return nil
+	}
+	session:=this.context.GetSession()
+	if session!=nil {
+		defer session.Close()
+			return session.QueryByPage(obj,page,sqlTemplate,args...)
+
+	}
+
+	return nil
+
+}
+
 func (this *BaseDao) Query(obj utils.Object,page sql.Page,cols ...string)([]interface{}){
 
 	if obj==nil {
