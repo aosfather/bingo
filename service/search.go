@@ -1,15 +1,16 @@
 package service
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/aosfather/bingo"
 	"github.com/aosfather/bingo/utils"
 	"github.com/go-redis/redis"
-	"strconv"
-	"crypto/md5"
-	"time"
-	"strings"
 )
 
 /**
@@ -29,13 +30,13 @@ type Field struct {
 }
 
 type PageSearchResult struct {
-	Id string `json:"uuid"`    //查询的请求id
-	Index int64 `json:"page"`  //页码
-	Data []TargetObject
+	Id    string `json:"uuid"` //查询的请求id
+	Index int64  `json:"page"` //页码
+	Data  []TargetObject
 }
 
 type TargetObject struct {
-	Id   string `json:"id"`
+	Id   string          `json:"id"`
 	Data json.RawMessage `json:"data"`
 }
 type SourceObject struct {
@@ -44,9 +45,9 @@ type SourceObject struct {
 }
 
 type SearchEngine struct {
-	indexs map[string]*searchIndex
-	client *redis.Client
-	logger utils.Log
+	indexs   map[string]*searchIndex
+	client   *redis.Client
+	logger   utils.Log
 	pageSize int64
 	pageLife int64 //分钟
 }
@@ -62,13 +63,13 @@ func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
 	if err != nil {
 		size = 20 //默认大小20条
 	}
-	this.pageSize=int64(size)
+	this.pageSize = int64(size)
 
 	life, err := strconv.Atoi(context.GetPropertyFromConfig("service.search.pagelife"))
 	if err != nil {
 		life = 10 //默认时间10分钟
 	}
-	this.pageLife=int64(life)
+	this.pageLife = int64(life)
 
 	this.client = redis.NewClient(&redis.Options{
 		Addr:     context.GetPropertyFromConfig("service.search.redis"),
@@ -102,50 +103,51 @@ func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
 
 }
 
-func (this *SearchEngine) FetchByPage(request string,page int64) *PageSearchResult {
+func (this *SearchEngine) FetchByPage(request string, page int64) *PageSearchResult {
 	if request != "" {
 		//获取request的name
-		index:=strings.Index(request,":")
-		if index<0 {
+		index := strings.Index(request, ":")
+		if index < 0 {
 			this.logger.Error("pagerequest's index name not found !")
-			return nil  //找不到对应的索引类型
+			return nil //找不到对应的索引类型
 		}
 
-		name:=request[0:index]
-		if page<=0 {
-			page=1
+		name := request[0:index]
+		if page <= 0 {
+			page = 1
 		}
-		startIndex:=(page-1) * this.pageSize+1  //从1开始计数
-		endIndex:=   page*this.pageSize
+		startIndex := (page - 1) * this.pageSize //+ 1 //从1开始计数
+		endIndex := page*this.pageSize - 1
 
-		keys,err:=this.client.LRange(request,startIndex,endIndex).Result()
-		if err!=nil ||len(keys)==0{
+		keys, err := this.client.LRange(request, startIndex, endIndex).Result()
+		if err != nil || len(keys) == 0 {
 			this.logger.Debug("no content by page!")
 			return nil
 		}
-		go this.client.Expire(request,time.Duration(this.pageLife)*time.Minute)//更新重置失效时间
-		return &PageSearchResult{request,page,this.fetch(name,keys...)}
+		go this.client.Expire(request, time.Duration(this.pageLife)*time.Minute) //更新重置失效时间
+		return &PageSearchResult{request, page, this.fetch(name, keys...)}
 	}
 
 	return nil
 }
 
-func (this *SearchEngine)createRequst(name string,keys... string) string {
-    key:= getSearchRequestUuid(name)
+func (this *SearchEngine) createRequst(key string, keys ...string) {
+	//    key:= getSearchRequestUuid(name)
 	var datas []interface{}
 
-	for _,v:=range keys {
-		datas=append(datas,v)
+	for _, v := range keys {
+		datas = append(datas, v)
 	}
 
-	this.client.LPush(key,datas...)
-    this.client.Expire(key,time.Duration(this.pageLife)*time.Minute)//指定x分钟后失效
-	return key
+	this.client.LPush(key, datas...)
+	this.client.Expire(key, time.Duration(this.pageLife)*time.Minute) //指定x分钟后失效
+	//	return key
 }
+
 //获取内容
-func (this *SearchEngine) fetch(name string,keys ... string) []TargetObject{
+func (this *SearchEngine) fetch(name string, keys ...string) []TargetObject {
 	datas, err1 := this.client.HMGet(name, keys...).Result()
-	if err1 == nil && len(datas) > 0{
+	if err1 == nil && len(datas) > 0 {
 
 		var targets []TargetObject
 
@@ -166,13 +168,12 @@ func (this *SearchEngine) fetch(name string,keys ... string) []TargetObject{
 	return nil
 }
 
-
 func (this *SearchEngine) Search(name string, input ...Field) *PageSearchResult {
 	if name != "" {
 		index := this.indexs[name]
 		if index != nil {
-			r,data:= index.Search(input...)
-			return &PageSearchResult{r,1,data}
+			r, data := index.Search(input...)
+			return &PageSearchResult{r, 1, data}
 
 		}
 		this.logger.Info("not found index %s", name)
@@ -187,26 +188,54 @@ type searchIndex struct {
 }
 
 //搜索信息
-func (this *searchIndex) Search(input ...Field) (string,[]TargetObject) {
+func (this *searchIndex) Search(input ...Field) (string, []TargetObject) {
+	//生成索引搜索请求号
+	requestkey := getSearchRequestUuid(this.name)
+
 	//搜索索引
 	var searchkeys []string
 	for _, f := range input {
-		searchkeys = append(searchkeys, this.buildTheKey(f))
+		//处理并集
+		v := f.Value
+		arrays := strings.Split(v, "|")
+		if len(arrays) > 1 {
+			skey := requestkey + ":" + f.Key
+			var subkeys []string
+			for _, subkey := range arrays {
+				subkeys = append(subkeys, this.buildTheKeyByItem(f.Key, subkey))
+			}
+
+			//取并集，将结果存入临时的key中，用于后续取交集用
+			this.engine.client.SUnionStore(skey, subkeys...)
+			this.engine.client.Expire(skey, time.Duration(5)*time.Minute)
+			searchkeys = append(searchkeys, skey)
+		} else {
+			searchkeys = append(searchkeys, this.buildTheKey(f))
+		}
+
 	}
 	//取交集
 	result := this.engine.client.SInter(searchkeys...)
 	targetkeys, err := result.Result()
 	if err != nil {
 		this.engine.logger.Error("inter key error!%s", err.Error())
-		return "",nil
+		return "", nil
 	}
-	if len(targetkeys) > 0 {
+
+	size := len(targetkeys)
+	if size > 0 {
 		//生成request
-		r:=this.engine.createRequst(this.name,targetkeys...)
-		//写入到列表中
-        query:=targetkeys[1:this.engine.pageSize]
+		this.engine.createRequst(requestkey, targetkeys...)
+
+		var query []string
+		if size > int(this.engine.pageSize) {
+			//写入到列表中
+			query = targetkeys[0:this.engine.pageSize]
+		} else {
+			query = targetkeys
+		}
 		//根据最后的id，从data中取出所有命中的元素
-		return r,this.engine.fetch(this.name,query...)
+		return requestkey, this.engine.fetch(this.name, query...)
 		//datas, err1 := this.engine.client.HMGet(this.name, targetkeys...).Result()
 		//if err1 == nil && len(datas) > 0{
 		//
@@ -228,7 +257,7 @@ func (this *searchIndex) Search(input ...Field) (string,[]TargetObject) {
 
 	}
 
-	return "",nil
+	return "", nil
 }
 
 //刷新索引，加载信息到存储中
@@ -241,7 +270,7 @@ func (this *searchIndex) LoadObject(obj *SourceObject) {
 	//2、根据field存储到各个对应的索引中
 
 	for k, v := range obj.Fields {
-		this.engine.client.SAdd(this.buildTheKeyByItem(k,v), key)
+		this.engine.client.SAdd(this.buildTheKeyByItem(k, v), key)
 	}
 
 }
@@ -250,7 +279,7 @@ func (this *searchIndex) buildTheKey(f Field) string {
 	return this.buildTheKeyByItem(f.Key, f.Value)
 }
 
-func (this *searchIndex) buildTheKeyByItem(key,value string) string {
+func (this *searchIndex) buildTheKeyByItem(key, value string) string {
 	return fmt.Sprintf("%s_%s_%s", this.name, key, value)
 }
 
@@ -264,5 +293,5 @@ func getMd5str(value string) string {
 }
 
 func getSearchRequestUuid(prefix string) string {
-	return fmt.Sprintf("%s:%d",prefix, time.Now().UnixNano())
+	return fmt.Sprintf("%s:%d", prefix, time.Now().UnixNano())
 }
