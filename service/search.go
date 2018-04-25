@@ -194,6 +194,7 @@ func (this *searchIndex) Search(input ...Field) (string, []TargetObject) {
 
 	//搜索索引
 	var searchkeys []string
+	var tmpkeys []string
 	for _, f := range input {
 		//处理并集
 		v := f.Value
@@ -207,13 +208,14 @@ func (this *searchIndex) Search(input ...Field) (string, []TargetObject) {
 
 			//取并集，将结果存入临时的key中，用于后续取交集用
 			this.engine.client.SUnionStore(skey, subkeys...)
-			this.engine.client.Expire(skey, time.Duration(5)*time.Minute)
+			tmpkeys = append(tmpkeys, skey) //放入临时组中用于使用后删除
 			searchkeys = append(searchkeys, skey)
 		} else {
 			searchkeys = append(searchkeys, this.buildTheKey(f))
 		}
 
 	}
+	defer this.deleteTempkeys(tmpkeys) //删除临时创建的key
 	//取交集
 	result := this.engine.client.SInter(searchkeys...)
 	targetkeys, err := result.Result()
@@ -222,6 +224,7 @@ func (this *searchIndex) Search(input ...Field) (string, []TargetObject) {
 		return "", nil
 	}
 
+	//取出第一页的key
 	size := len(targetkeys)
 	if size > 0 {
 		//生成request
@@ -234,30 +237,19 @@ func (this *searchIndex) Search(input ...Field) (string, []TargetObject) {
 		} else {
 			query = targetkeys
 		}
-		//根据最后的id，从data中取出所有命中的元素
-		return requestkey, this.engine.fetch(this.name, query...)
-		//datas, err1 := this.engine.client.HMGet(this.name, targetkeys...).Result()
-		//if err1 == nil && len(datas) > 0{
-		//
-		//		var targets []TargetObject
-		//
-		//		for _, v := range datas {
-		//			if v != nil {
-		//				t := TargetObject{}
-		//				json.Unmarshal([]byte(fmt.Sprintf("%v", v)), &t)
-		//				targets = append(targets, t)
-		//			}
-		//		}
-		//
-		//		return targets
-		//
-		//} else {
-		//	this.engine.logger.Error("get data by index error!%s", err1.Error())
-		//}
 
+		//根据最后的id，从data中取出第一页的元素的元素
+		return requestkey, this.engine.fetch(this.name, query...)
 	}
 
 	return "", nil
+}
+
+//删除临时创建的key
+func (this *searchIndex) deleteTempkeys(keys []string) {
+	if keys != nil && len(keys) > 0 {
+		this.engine.client.Del(keys...)
+	}
 }
 
 //刷新索引，加载信息到存储中
