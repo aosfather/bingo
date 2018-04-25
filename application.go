@@ -170,10 +170,11 @@ const (
 	SIGUSR1   = syscall.Signal(0x1e)
 	SIGUSR2   = syscall.Signal(0x1f)
 )
+
 //监听被kill的信号，当被kill的时候执行处理
 func (this *TApplication) signalListen() {
 	c := make(chan os.Signal)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM,SIGUSR1, SIGUSR2)
+	signal.Notify(c, os.Interrupt, os.Kill,syscall.SIGTERM,SIGUSR1, SIGUSR2)
 	//for {
 		s := <-c
 		//收到信号后的处理，这里只是输出信号内容，可以做一些更有意思的事
