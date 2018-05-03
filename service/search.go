@@ -134,6 +134,9 @@ func (this *SearchEngine)FlushIndex(name string) {
 
 //加载和刷新数据
 func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
+	if name==""||obj==nil {
+		return
+	}
 
 	index := this.CreateIndex(name)
 	if index != nil {
@@ -142,6 +145,15 @@ func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
 
 }
 
+//删除数据
+func (this *SearchEngine)RemoveSource(name string, obj *SourceObject){
+   if name!=""&&obj!=nil{
+	   index := this.CreateIndex(name)
+	   if index != nil {
+		   index.RemoveObject(obj)
+	   }
+   }
+}
 
 //按页获取数据
 func (this *SearchEngine) FetchByPage(request string, page int64) *PageSearchResult {
@@ -309,6 +321,23 @@ func (this *searchIndex) LoadObject(obj *SourceObject) {
 	for k, v := range obj.Fields {
 		this.engine.client.SAdd(this.buildTheKeyByItem(k, v), key)
 	}
+
+}
+
+//删除数据：删除数据及索引存的值
+func (this *searchIndex)RemoveObject(obj *SourceObject) {
+	data, _ := json.Marshal(obj)
+	key:=obj.Id
+	if key=="" {
+		key=getMd5str(string(data))
+	}
+	//删除数据
+	this.engine.client.HDel(this.name,key)
+	//删除索引里的记录
+	for k,v:=range obj.Fields {
+		this.engine.client.SRem(this.buildTheKeyByItem(k, v), key)
+	}
+
 
 }
 
