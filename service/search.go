@@ -44,6 +44,26 @@ type SourceObject struct {
 	Fields map[string]string `json:"fields"`
 }
 
+type FieldType byte
+const (
+	FT_TEXT FieldType =11  //文本类型
+	FT_NUMBER FieldType =9 //数字
+	FT_ENUM   FieldType =8 //枚举
+	FT_ID FieldType =7  //id唯一标识
+	FT_DATE FieldType =6 //日期
+)
+//索引的元数据信息
+type IndexMeta struct {
+	Name string  //索引名称
+	Fields []FieldMeta //字段
+}
+
+type FieldMeta struct {
+	Name string //字段名称
+	Type FieldType //类型
+
+}
+
 type SearchEngine struct {
 	indexs   map[string]*searchIndex
 	client   *redis.Client
@@ -81,6 +101,7 @@ func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
 	this.logger = context.GetLog("bingo_search")
 }
 
+//创建索引
 func (this *SearchEngine) CreateIndex(name string) *searchIndex {
 	if name != "" {
 		index := this.indexs[name]
@@ -94,6 +115,24 @@ func (this *SearchEngine) CreateIndex(name string) *searchIndex {
 	return nil
 }
 
+//清除索引，将整个索引的数据摧毁
+func (this *SearchEngine)FlushIndex(name string) {
+	//1、删除存放的数据
+	this.client.Del(name)
+
+	//2、删除所有的索引key
+	keys,err:=this.client.Keys(name+"_*").Result()
+	if err!=nil {
+		this.logger.Debug("get index keys error:%s",err.Error())
+	}
+
+	if keys!=nil && len(keys)>0 {
+		this.client.Del(keys...)
+	}
+}
+
+
+//加载和刷新数据
 func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
 
 	index := this.CreateIndex(name)
@@ -103,6 +142,8 @@ func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
 
 }
 
+
+//按页获取数据
 func (this *SearchEngine) FetchByPage(request string, page int64) *PageSearchResult {
 	if request != "" {
 		//获取request的name
@@ -255,12 +296,16 @@ func (this *searchIndex) deleteTempkeys(keys []string) {
 //刷新索引，加载信息到存储中
 func (this *searchIndex) LoadObject(obj *SourceObject) {
 	data, _ := json.Marshal(obj)
-	key := getMd5str(string(data))
+	key:=obj.Id
+	//如果没有指明对象id，则使用md5作为数据的唯一标识
+	if key=="" {
+		key= getMd5str(string(data))
+	}
+
 	//1、放入数据到目标集合中
 	this.engine.client.HSet(this.name, key, string(data))
 
 	//2、根据field存储到各个对应的索引中
-
 	for k, v := range obj.Fields {
 		this.engine.client.SAdd(this.buildTheKeyByItem(k, v), key)
 	}
