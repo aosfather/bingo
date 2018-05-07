@@ -66,6 +66,7 @@ type FieldMeta struct {
 
 type SearchEngine struct {
 	indexs   map[string]*searchIndex
+	safeIndexs map[string]*searchIndex  //安全flush时候的临时索引
 	client   *redis.Client
 	logger   utils.Log
 	pageSize int64
@@ -98,6 +99,7 @@ func (this *SearchEngine) Init(context *bingo.ApplicationContext) {
 	})
 	fmt.Println(context.GetPropertyFromConfig("service.search.redis"))
 	this.indexs = make(map[string]*searchIndex)
+	this.safeIndexs = make(map[string]*searchIndex)
 	this.logger = context.GetLog("bingo_search")
 }
 
@@ -115,6 +117,7 @@ func (this *SearchEngine) CreateIndex(name string) *searchIndex {
 	return nil
 }
 
+
 //清除索引，将整个索引的数据摧毁
 func (this *SearchEngine)FlushIndex(name string) {
 	//1、删除存放的数据
@@ -131,6 +134,30 @@ func (this *SearchEngine)FlushIndex(name string) {
 	}
 }
 
+//开始安全flush
+func (this *SearchEngine)BeginSafeFlush(name string) {
+	index := this.indexs[name]
+	if index!=nil {
+		var nindexName string
+		if strings.HasSuffix(index.name,"#") {
+			nindexName=index.name[0:len(index.name)-2]
+		}else {
+			nindexName=index.name+"#"
+		}
+
+		nindex:=&searchIndex{nindexName, this}
+		this.safeIndexs[name]=nindex
+	}
+}
+
+//结束安全flush，自动替换掉查询用的索引
+func (this *SearchEngine)EndSafeFlush(name string) {
+	index:=this.safeIndexs[name]
+	if index!=nil {
+		delete(this.safeIndexs,name)
+		this.indexs[name]=index
+	}
+}
 
 //加载和刷新数据
 func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
@@ -138,7 +165,12 @@ func (this *SearchEngine) LoadSource(name string, obj *SourceObject) {
 		return
 	}
 
-	index := this.CreateIndex(name)
+	//判断是否正在进行安全flush，如果是安全flush，所有的更改只发生在正在替换的索引上
+	index:=this.safeIndexs[name]
+	if index==nil {
+		index = this.CreateIndex(name)
+	}
+
 	if index != nil {
 		index.LoadObject(obj)
 	}
