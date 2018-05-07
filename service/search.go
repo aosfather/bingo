@@ -155,7 +155,12 @@ func (this *SearchEngine)EndSafeFlush(name string) {
 	index:=this.safeIndexs[name]
 	if index!=nil {
 		delete(this.safeIndexs,name)
+		oldindex:=this.indexs[name]
 		this.indexs[name]=index
+        //删除旧的索引数据
+		if oldindex!=nil {
+			this.FlushIndex(oldindex.name)
+		}
 	}
 }
 
