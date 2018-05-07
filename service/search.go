@@ -41,7 +41,7 @@ type TargetObject struct {
 }
 type SourceObject struct {
 	TargetObject
-	Fields map[string]string `json:"fields"`
+	Fields map[string][]string `json:"fields"`
 }
 
 type FieldType byte
@@ -319,7 +319,10 @@ func (this *searchIndex) LoadObject(obj *SourceObject) {
 
 	//2、根据field存储到各个对应的索引中
 	for k, v := range obj.Fields {
-		this.engine.client.SAdd(this.buildTheKeyByItem(k, v), key)
+		for _,vkey:=range v{
+			this.engine.client.SAdd(this.buildTheKeyByItem(k, vkey), key)
+		}
+
 	}
 
 }
@@ -335,7 +338,9 @@ func (this *searchIndex)RemoveObject(obj *SourceObject) {
 	this.engine.client.HDel(this.name,key)
 	//删除索引里的记录
 	for k,v:=range obj.Fields {
-		this.engine.client.SRem(this.buildTheKeyByItem(k, v), key)
+		for _,vkey:=range v {
+			this.engine.client.SRem(this.buildTheKeyByItem(k, vkey), key)
+		}
 	}
 
 
