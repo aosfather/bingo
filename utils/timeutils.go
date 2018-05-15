@@ -2,6 +2,7 @@ package utils
 
 import (
 	"time"
+	"strconv"
 )
 
 const (
@@ -24,3 +25,39 @@ func SinceMinutes(fromtime string) int {
 	}
 	return int(time.Since(fromTime).Minutes())
 }
+
+//日期，兼容java习惯
+type DateTime struct {
+	t *time.Time
+}
+
+func (this *DateTime) FromDateTime(dt string) {
+	t,_:=time.ParseInLocation(FORMAT_DATETIME,dt,time.Local)
+	this.t=&t
+}
+
+func (this *DateTime) FromTimeMillis(long int64) {
+	t:=time.Unix(long/1000,long*1e6)
+    this.t=&t
+}
+
+func (this DateTime) CurrentTimeMillis() string{
+	return strconv.FormatInt(time.Now().UnixNano()/1e6, 10)
+}
+
+
+func (this *DateTime) GetTimeMillis() string{
+	if this.t==nil {
+		return ""
+	}
+	return strconv.FormatInt(this.t.UnixNano()/1e6, 10)
+}
+
+func (this *DateTime) GetDate() string {
+	if this.t==nil {
+		return ""
+	}
+	return this.t.Format(FORMAT_DATE)
+}
+
+

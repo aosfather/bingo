@@ -203,36 +203,32 @@ func (this *SearchEngine) FetchByPage(request string, page int64) *PageSearchRes
 		}
 
 		name := request[0:index]
-		if page <= 0 {
-			page = 1
-		}
-		startIndex := (page - 1) * this.pageSize //+ 1 //从1开始计数
-		endIndex := page*this.pageSize - 1
-
-		keys, err := this.client.LRange(request, startIndex, endIndex).Result()
-		if err != nil || len(keys) == 0 {
-			this.logger.Debug("no content by page!")
-			return nil
-		}
-		go this.client.Expire(request, time.Duration(this.pageLife)*time.Minute) //更新重置失效时间
-		return &PageSearchResult{request, page, this.fetch(name, keys...)}
+		return this.fetchByPage(name,request,page)
 	}
 
 	return nil
 }
 
-func (this *SearchEngine) createRequst(key string, keys ...string) {
-	//    key:= getSearchRequestUuid(name)
-	var datas []interface{}
-
-	for _, v := range keys {
-		datas = append(datas, v)
+func (this *SearchEngine)fetchByPage(name string,request string,page int64)*PageSearchResult {
+	if page <= 0 {
+		page = 1
 	}
+	startIndex := (page - 1) * this.pageSize //+ 1 //从1开始计数
+	endIndex := page*this.pageSize - 1
+	this.logger.Debug(request,startIndex,endIndex)
+	keys, err := this.client.LRange(request, startIndex, endIndex).Result()
 
-	this.client.LPush(key, datas...)
-	this.client.Expire(key, time.Duration(this.pageLife)*time.Minute) //指定x分钟后失效
-	//	return key
+	if err != nil || len(keys) == 0 {
+		if err!=nil {
+			this.logger.Debug(err.Error())
+		}
+		this.logger.Debug("no content by page!")
+		return nil
+	}
+	go this.client.Expire(request, time.Duration(this.pageLife)*time.Minute) //更新重置失效时间
+	return &PageSearchResult{request, page, this.fetch(name, keys...)}
 }
+
 
 //获取内容
 func (this *SearchEngine) fetch(name string, keys ...string) []TargetObject {
@@ -262,8 +258,7 @@ func (this *SearchEngine) Search(name string, input ...Field) *PageSearchResult 
 	if name != "" {
 		index := this.indexs[name]
 		if index != nil {
-			r, data := index.Search(input...)
-			return &PageSearchResult{r, 1, data}
+			return index.Search(input...)
 
 		}
 		this.logger.Info("not found index %s", name)
@@ -278,17 +273,35 @@ type searchIndex struct {
 }
 
 //搜索信息
-func (this *searchIndex) Search(input ...Field) (string, []TargetObject) {
+func (this *searchIndex) Search(input ...Field) *PageSearchResult {
 	//生成索引搜索请求号
 	requestkey := getSearchRequestUuid(this.name)
 
 	//搜索索引
 	var searchkeys []string
 	var tmpkeys []string
+	var notTmpkeys[]string
 	for _, f := range input {
+
+		//处理not的情况
+		if strings.HasPrefix(f.Key,"!") {//字段使用！表示"非"的意思，就是不等于
+		    k:=f.Key[1:len(f.Key)]
+			v := f.Value
+			arrays := strings.Split(v, "|")
+			if len(arrays) > 1 {
+				for _, subvalue := range arrays {
+					notTmpkeys = append(notTmpkeys, this.buildTheKeyByItem(k, subvalue))
+				}
+			}else {
+				notTmpkeys=append(notTmpkeys,this.buildTheKeyByItem(k, v))
+			}
+
+			continue
+		}
+
 		//处理并集
 		v := f.Value
-		arrays := strings.Split(v, "|")
+		arrays := strings.Split(v, "|")  //使用 | 分割多个取值
 		if len(arrays) > 1 {
 			skey := requestkey + ":" + f.Key
 			var subkeys []string
@@ -306,33 +319,45 @@ func (this *searchIndex) Search(input ...Field) (string, []TargetObject) {
 
 	}
 	defer this.deleteTempkeys(tmpkeys) //删除临时创建的key
-	//取交集
-	result := this.engine.client.SInter(searchkeys...)
-	targetkeys, err := result.Result()
-	if err != nil {
-		this.engine.logger.Error("inter key error!%s", err.Error())
-		return "", nil
-	}
 
-	//取出第一页的key
-	size := len(targetkeys)
-	if size > 0 {
-		//生成request
-		this.engine.createRequst(requestkey, targetkeys...)
 
-		var query []string
-		if size > int(this.engine.pageSize) {
-			//写入到列表中
-			query = targetkeys[0:this.engine.pageSize]
-		} else {
-			query = targetkeys
+	var values []string
+	//有差集
+	if notTmpkeys!=nil && len(notTmpkeys) >1 {
+		interTmpkey:=requestkey+"_tmp"
+		//取交集
+		result := this.engine.client.SInterStore(interTmpkey,searchkeys...)
+		_, err := result.Result()
+		if err != nil {
+			this.engine.logger.Error("inter key error!%s", err.Error())
+			return  nil
 		}
+		//取差集合，存储
+		diffkeys:=make([]string,len(notTmpkeys)+1)
+		diffkeys[0]=interTmpkey
+		copy(diffkeys[1:len(diffkeys)],notTmpkeys)
 
-		//根据最后的id，从data中取出第一页的元素的元素
-		return requestkey, this.engine.fetch(this.name, query...)
+		defer this.deleteTempkeys([]string{interTmpkey})//删除临时key
+		data:=this.engine.client.SDiff(diffkeys...)
+		values, _ = data.Result()
+
+	} else {//如果无差集合，则直接返回交集
+		result:=this.engine.client.SInter(searchkeys...)
+		values, _ = result.Result()
 	}
 
-	return "", nil
+	//存储数据
+	var datas []interface{}
+
+	for _, v := range values {
+		datas = append(datas, v)
+	}
+	this.engine.client.RPush(requestkey,datas...)
+
+	this.engine.client.Expire(requestkey, time.Duration(this.engine.pageLife)*time.Minute) //指定x分钟后失效
+	//取出第一页的数据返回
+	return this.engine.fetchByPage(this.name,requestkey,1)
+
 }
 
 //删除临时创建的key
