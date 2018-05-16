@@ -192,6 +192,17 @@ func (this *SearchEngine)RemoveSource(name string, obj *SourceObject){
    }
 }
 
+//删除索引中的某个词条
+func (this *SearchEngine)RemoveKeyword(name,field,word string)  {
+	if name!="" {
+		index := this.CreateIndex(name)
+		if index != nil {
+			index.RemoveKeyword(field,word)
+		}
+	}
+
+}
+
 //按页获取数据
 func (this *SearchEngine) FetchByPage(request string, page int64) *PageSearchResult {
 	if request != "" {
@@ -357,6 +368,15 @@ func (this *searchIndex) Search(input ...Field) *PageSearchResult {
 	this.engine.client.Expire(requestkey, time.Duration(this.engine.pageLife)*time.Minute) //指定x分钟后失效
 	//取出第一页的数据返回
 	return this.engine.fetchByPage(this.name,requestkey,1)
+
+}
+
+//删除某个字段等于某值得列表，也就是删除一个词条
+func (this *searchIndex)RemoveKeyword(field,word string){
+	if field!=""&&word!="" {
+		thekey:=this.buildTheKeyByItem(field,word)
+		this.engine.client.Del(thekey)
+	}
 
 }
 
