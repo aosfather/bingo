@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"github.com/aosfather/bingo/utils"
+	"strings"
 )
 
 /*
@@ -128,7 +129,7 @@ func parseRequest(logger utils.Log,request *http.Request, target interface{}) {
 	}
 
 	contentType := request.Header.Get(_CONTENT_TYPE)
-	if _CONTENT_TYPE_JSON == contentType || _CONTENT_JSON == contentType { //处理为json的输入
+	if _CONTENT_TYPE_JSON == contentType || _CONTENT_JSON == contentType||strings.Contains(contentType,_CONTENT_TYPE_JSON) { //处理为json的输入
 		input, err := ioutil.ReadAll(request.Body)
 		logger.Debug(string(input))
 		defer request.Body.Close()
