@@ -1,8 +1,8 @@
 package openapi
 
 import (
-	"github.com/aosfather/comb"
 	"github.com/aosfather/bingo/utils"
+	"fmt"
 )
 
 const (
@@ -41,6 +41,20 @@ type TulingItem struct {
 	Source  string `json:"source"`    //来源
 }
 
+//type News struct {
+//	Article   string `json:"article"`
+//	Source    string `json:"source"`
+//	Icon      string `json:"icon"`
+//	DetailURL string `json:"detailurl"`
+//}
+//
+//type Menu struct {
+//	Name      string `json:"name"`
+//	Icon      string `json:"icon"`
+//	Info      string `json:"info"`
+//	DetailURL string `json:"detailurl"`
+//}
+
 type TulingSDK struct {
 	Key string
 }
@@ -53,5 +67,34 @@ func (this *TulingSDK) Query(user, text string) TulingRespone {
 	result := TulingRespone{}
 	utils.Post(API_URL, request, &result)
 	return result
+
+}
+
+func (this *TulingSDK)QueryAsString(user,text string) string {
+	reply:=this.Query(user,text)
+
+	switch reply.Code {
+	case 100000:
+		return reply.Text
+	case 200000:
+		return reply.Text + " " + reply.URL
+	case 302000:
+		var res string
+		news := reply.List
+		for _, n := range news {
+			res += fmt.Sprintf("%s\n%s\n", n.Article, n.Url)
+		}
+
+		return res
+	case 308000:
+		var res string
+		menu := reply.List
+		for _, m := range menu {
+			res += fmt.Sprintf("%s\n%s\n%s\n", m.Name, m.Info, m.Url)
+		}
+		return res
+	default:
+		return "不知道你在说啥～"
+	}
 
 }

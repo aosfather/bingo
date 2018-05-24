@@ -213,6 +213,15 @@ func (this *SearchEngine) RemoveBySearch(name string, input ...Field) {
 	}
 }
 
+func (this *SearchEngine) Fetch(name,id string) *SourceObject {
+	if name != "" {
+		index := this.CreateIndex(name)
+		if index != nil {
+			index.GetObject(id)
+		}
+	}
+	return nil
+}
 
 //删除索引中的某个词条
 func (this *SearchEngine) RemoveKeyword(name, field, word string) {
@@ -410,6 +419,18 @@ func (this *searchIndex) deleteTempkeys(keys []string) {
 	if keys != nil && len(keys) > 0 {
 		this.engine.client.Del(keys...)
 	}
+}
+func(this *searchIndex)GetObject(id string)*SourceObject {
+	if id!="" {
+		data,err:=this.engine.client.HGet(this.name,id).Result()
+		if err==nil {
+			result:=SourceObject{}
+			json.Unmarshal([]byte(data),&result)
+			return &result
+		}
+	}
+
+	return nil
 }
 
 //刷新索引，加载信息到存储中
