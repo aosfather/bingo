@@ -387,26 +387,7 @@ func (w *Wecat) run(desc string, f func() error) {
 	log.Info("SUCCESS, use time", time.Now().Sub(start).Nanoseconds())
 }
 
-func (w *Wecat) SendMessage(message string, to string) error {
-	uri := fmt.Sprintf("%s/webwxsendmsg?pass_ticket=%s", w.baseURI, w.loginRes.PassTicket)
-	clientMsgID := w.timestamp() + "0" + strconv.Itoa(rand.Int())[3:6]
-	params := make(map[string]interface{})
-	params["BaseRequest"] = w.baseRequest
-	msg := make(map[string]interface{})
-	msg["Type"] = 1
-	msg["Content"] = message
-	msg["FromUserName"] = w.user.UserName
-	msg["ToUserName"] = to
-	msg["LocalID"] = clientMsgID
-	msg["ClientMsgId"] = clientMsgID
-	params["Msg"] = msg
-	_, err := w.post(uri, params)
-	if err != nil {
-		return err
-	}
 
-	return nil
-}
 
 func (w *Wecat) getNickName(userName string) string {
 	if v, ok := w.contacts[userName]; ok {
