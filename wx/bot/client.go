@@ -1,59 +1,55 @@
 package bot
 
 import (
-"bytes"
-"encoding/json"
-"encoding/xml"
-"errors"
-"fmt"
-"io/ioutil"
-"math/rand"
-"net/http"
-"net/http/cookiejar"
-"net/url"
-"os"
-"regexp"
-"strconv"
-"strings"
-"time"
-	"github.com/aosfather/bingo/openapi"
+	"bytes"
+	"encoding/json"
+	"encoding/xml"
+	"errors"
+	"fmt"
+	"io/ioutil"
+	"math/rand"
+	"net/http"
+	"net/http/cookiejar"
+	"net/url"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
 	"github.com/aosfather/bingo/utils"
 )
 
 type Logger struct {
-
 }
 
-func (this *Logger)Panic(f string,v ...interface{}) {
-	fmt.Printf(f,v...)
+func (this *Logger) Panic(f string, v ...interface{}) {
+	fmt.Printf(f, v...)
 }
 
 // Fatal without custom Fields.
-func (this *Logger)Fatal(f string,v ...interface{}) {
-	fmt.Printf(f,v...)
+func (this *Logger) Fatal(f string, v ...interface{}) {
+	fmt.Printf(f, v...)
 }
 
 // Error without custom Fields.
-func (this *Logger)Error(f string,v ...interface{}) {
-	fmt.Printf(f,v...)
+func (this *Logger) Error(f string, v ...interface{}) {
+	fmt.Printf(f, v...)
 }
 
 // Warn without custom Fields.
-func (this *Logger)Warn(f string,v ...interface{}) {
-	fmt.Printf(f,v...)
+func (this *Logger) Warn(f string, v ...interface{}) {
+	fmt.Printf(f, v...)
 }
 
 // Info without custom Fields.
-func (this *Logger)Info(f string,v ...interface{}) {
-	fmt.Printf(f,v...)
+func (this *Logger) Info(f string, v ...interface{}) {
+	fmt.Printf(f, v...)
 }
 
 // Debug without custom Fields.
-func Debug(f string,v ...interface{}) {
-	fmt.Printf(f,v...)
+func Debug(f string, v ...interface{}) {
+	fmt.Printf(f, v...)
 }
-
-
 
 type Wecat struct {
 	uuid        string
@@ -70,7 +66,8 @@ type Wecat struct {
 	showRebot   bool
 	contacts    map[string]Contact
 	robotName   string
-	tuling      *openapi.TulingSDK
+	currentBot  TalkBot
+	currentBotIndex int
 }
 
 const (
@@ -80,7 +77,7 @@ const (
 )
 
 var (
-    log =Logger{}
+	log   = Logger{}
 	Hosts = []string{
 		"webpush.wx.qq.com",
 		"webpush2.wx.qq.com",
@@ -89,7 +86,6 @@ var (
 		"webpush2.wechat.com",
 		"webpush1.wechatapp.com",
 	}
-
 )
 
 func NewWecat() (*Wecat, error) {
@@ -106,16 +102,13 @@ func NewWecat() (*Wecat, error) {
 
 	rand.Seed(time.Now().Unix())
 	randID := strconv.Itoa(rand.Int())
-    t:=openapi.TulingSDK{}
-    t.Key="808811ad0fd34abaa6fe800b44a9556a"
 	return &Wecat{
 		client:      client,
 		deviceID:    "e" + randID[2:17],
 		baseRequest: make(map[string]interface{}),
 		contacts:    make(map[string]Contact),
 		auto:        true,
-		tuling:&t,
-		robotName:"图小二",
+		robotName:   "图小二",
 	}, nil
 }
 
@@ -158,7 +151,7 @@ func (w *Wecat) GenQrcode() error {
 	}
 
 	uri := LoginBaseURL + "/qrcode/" + w.uuid + "?t=webwx&_=" + w.timestamp()
-    fmt.Println(uri)
+	fmt.Println(uri)
 	//resp, err := w.get(uri)
 	//qr := qrcode.NewQRCode("", false)
 	//
@@ -204,7 +197,7 @@ func (w *Wecat) Login() error {
 					baseURIs := re.FindAllStringIndex(redirctURI, -1)
 					w.baseURI = redirctURI[:baseURIs[len(baseURIs)-1][0]]
 					if err := w.redirect(); err != nil {
-						log.Error("%s",err)
+						log.Error("%s", err)
 						return err
 					}
 					return nil
@@ -394,7 +387,6 @@ func (w *Wecat) run(desc string, f func() error) {
 	log.Info("SUCCESS, use time", time.Now().Sub(start).Nanoseconds())
 }
 
-
 func (w *Wecat) SendMessage(message string, to string) error {
 	uri := fmt.Sprintf("%s/webwxsendmsg?pass_ticket=%s", w.baseURI, w.loginRes.PassTicket)
 	clientMsgID := w.timestamp() + "0" + strconv.Itoa(rand.Int())[3:6]
@@ -436,18 +428,18 @@ func (w *Wecat) handle(msg *Message) error {
 
 	for _, m := range msg.AddMsgList {
 		fmt.Println(m)
-		fmt.Println(w.user.NickName,w.user.RemarkName)
+		fmt.Println(w.user.NickName, w.user.RemarkName)
 		m.Content = strings.Replace(m.Content, "&lt;", "<", -1)
 		m.Content = strings.Replace(m.Content, "&gt;", ">", -1)
 		switch m.MsgType {
 		case 1:
 			if m.FromUserName[:2] == "@@" { //群消息
-			    w.doGroupReply(m.Content,m.FromUserName)
+				w.doGroupReply(m.Content, m.FromUserName)
 			} else {
 				if m.FromUserName != w.user.UserName {
-					w.doAutoReply(m.Content,m.FromUserName)
-					} else {
-					w.doCommand(m.Content,m.ToUserName)
+					w.doAutoReply(m.Content, m.FromUserName)
+				} else {
+					w.doCommand(m.Content, m.ToUserName)
 				}
 			}
 		case 51:
@@ -473,11 +465,11 @@ func (w *Wecat) Dail() error {
 			case 2:
 				msg, err := w.WxSync()
 				if err != nil {
-					log.Error("%s",err)
+					log.Error("%s", err)
 				}
 
 				if err := w.handle(msg); err != nil {
-					log.Error("%s",err)
+					log.Error("%s", err)
 				}
 			case 0:
 				time.Sleep(time.Second)
@@ -549,4 +541,3 @@ func (w *Wecat) post(uri string, params map[string]interface{}) ([]byte, error) 
 
 	return ioutil.ReadAll(resp.Body)
 }
-

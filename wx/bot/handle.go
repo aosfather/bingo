@@ -20,9 +20,22 @@ func (w *Wecat) doCommand(c string,to string) {
 		fmt.Println("set showrebot ",w.showRebot)
 	case "隐身":
 		w.showRebot = false
+	case "换人":
+		w.currentBotIndex++
+		if w.currentBotIndex >=len(botsMap) {
+			w.currentBotIndex=0
+		}
+		w.currentBot=botsMap[w.currentBotIndex]
 	default:
-		fmt.Println("[unknown command] ", w.user.UserName, ": ", c)
-		w.doAutoReply(c,to)
+		parames:=strings.Split(c," ")
+		reply:=w.callBot(parames...)
+		if reply=="" {
+			fmt.Println("[unknown command] ", w.user.UserName, ": ", c)
+			w.doAutoReply(c,to)
+		}else {
+			w.SendMessage(reply,to)
+		}
+
 	}
 
 	}else {
@@ -36,6 +49,21 @@ func (w *Wecat) doCommand(c string,to string) {
 	}
 }
 
+
+func(w*Wecat) callBot(parames...string) string {
+	size:=len(parames)
+	if size>0 {
+        bot:=bots[parames[0]]
+        if bot!=nil {
+        	if size>1 {
+				return bot.DoAction(parames[1:len(parames)]...)
+			}else {
+				return bot.DoAction()
+			}
+		}
+	}
+	return ""
+}
 
 func(w *Wecat)doAutoReply(c string,fromUserName string) {
 	fmt.Println("[*] ", w.getNickName(fromUserName), ": ", c)
@@ -68,6 +96,7 @@ func (w *Wecat)doGroupReply(c string,fromUserName string){
 	if w.isAtme(content) {
 		content = strings.Replace(content, "@"+w.user.NickName, "", -1)
 		content = strings.Replace(content, "@"+w.user.RemarkName, "", -1)
+		content = strings.Replace(content, "@"+w.robotName, "", -1)
         w.doAutoReply(content,fromUserName)
 	} else {
 		fmt.Println(contents[0])
@@ -88,6 +117,10 @@ func (w *Wecat)isAtme(content string) bool {
 
 
 func (w *Wecat) getReply(msg string, uid string) (string, error) {
-     return w.tuling.QueryAsString(uid,msg),nil
+	if w.currentBot==nil {
+	  w.currentBotIndex=0
+      w.currentBot=botsMap[w.currentBotIndex]
+	}
+     return w.currentBot.Reply(uid,msg),nil
 }
 
