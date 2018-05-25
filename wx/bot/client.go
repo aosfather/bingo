@@ -258,6 +258,7 @@ func (w *Wecat) Init() error {
 	w.syncKey = res.SyncKey
 
 	if res.BaseResponse.Ret != 0 {
+		fmt.Println(string(data))
 		log.Error("init fail ret <> 0")
 	}
 
@@ -320,7 +321,7 @@ func (w *Wecat) StatusNotify() error {
 	if err := json.Unmarshal(data, &res); err != nil {
 		return err
 	}
-
+    fmt.Println(string(data))
 	if res.BaseResponse.Ret != 0 {
 		return fmt.Errorf("%s", res.BaseResponse.ErrMsg)
 	}
@@ -378,13 +379,13 @@ func (w *Wecat) WxSync() (*Message, error) {
 
 func (w *Wecat) run(desc string, f func() error) {
 	start := time.Now()
-	log.Info(desc)
+	log.Info(desc+"\n")
 	if err := f(); err != nil {
 		log.Error("FAIL, exit now", err)
 		os.Exit(1)
 	}
 
-	log.Info("SUCCESS, use time", time.Now().Sub(start).Nanoseconds())
+	log.Info("--> SUCCESS, use time ", strconv.FormatInt(time.Now().Sub(start).Nanoseconds(),10),"\n")
 }
 
 

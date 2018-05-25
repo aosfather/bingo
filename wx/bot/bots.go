@@ -4,6 +4,7 @@ import (
 	"github.com/aosfather/bingo/openapi"
 	"fmt"
 	"strings"
+	"os/exec"
 )
 
 var (
@@ -16,6 +17,7 @@ func init(){
 	botsMap=append(botsMap,&TulingBot{&openapi.TulingSDK{"808811ad0fd34abaa6fe800b44a9556a"}})
 	botsMap=append(botsMap,&MoliBot{})
 	bots["翻译"]=&YoudaoBot{}
+	bots["执行"]=&CmdBot{}
 }
 type Bot interface {
     DoAction(paramters...string) string
@@ -54,4 +56,19 @@ type YoudaoBot struct {
 }
 func (this *YoudaoBot)DoAction(paramters...string) string{
 	return openapi.QueryFromYoudaoAsString(strings.Join(paramters," "))
+}
+
+//命令执行bot
+type CmdBot struct {
+
+}
+
+func (this *CmdBot)DoAction(paramters...string) string{
+	cmd := exec.Command(paramters[0], paramters[1:len(paramters)]...)
+	out, err := cmd.Output()
+	if err!=nil {
+		return err.Error()
+	}
+
+	return string(out)
 }
