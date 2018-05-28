@@ -13,6 +13,7 @@ import (
 
 	"syscall"
 	"os/signal"
+	"path/filepath"
 )
 
 
@@ -140,6 +141,23 @@ func (this *TApplication)SetHandler(load OnLoad,handler OnLoadHandler){
 
 func (this *TApplication)SetOnDestoryHandler(h OnDestoryHandler){
 	this.onShutdown=h
+}
+
+func (this *TApplication)RunApp(){
+	var configfile string
+	if len(os.Args)>1 {
+		configfile=os.Args[1]
+	}else {
+		configfile="config.conf"
+	}
+
+	if !utils.IsFileExist(configfile) {
+		dir,_:= filepath.Abs(filepath.Dir(os.Args[0]))
+		configfile=dir+"/"+configfile
+	}
+
+	this.Run(configfile)
+
 }
 
 func (this *TApplication)Run(file string){
