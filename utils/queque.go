@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 )
+
 /**
   队列实现
  */
@@ -20,22 +21,22 @@ func NewQueue() *Queue {
 }
 
 func (q *Queue) push(v interface{}) {
-	defer 	q.lock.Unlock()
 	q.lock.Lock()
 	q.data.PushFront(v)
+	q.lock.Unlock()
 }
 
 func (q *Queue) pop() interface{} {
-	defer q.lock.Unlock()
 	q.lock.Lock()
 	iter := q.data.Back()
-	if iter!=nil {
-
-
-	v := iter.Value
-	q.data.Remove(iter)
-	return v
+	if iter != nil {
+		v := iter.Value
+		q.data.Remove(iter)
+		q.lock.Unlock()
+		return v
 	}
+
+	q.lock.Unlock()
 	return nil
 }
 
