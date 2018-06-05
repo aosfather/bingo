@@ -217,7 +217,7 @@ func (this *SearchEngine) Fetch(name,id string) *SourceObject {
 	if name != "" {
 		index := this.CreateIndex(name)
 		if index != nil {
-			index.GetObject(id)
+			return index.GetObject(id)
 		}
 	}
 	return nil
