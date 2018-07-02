@@ -278,8 +278,8 @@ func (this *WxBaseApplicationHold) autoRefresh() {
 }
 
 func (this *WxBaseApplicationHold) refreshAllToken() {
-	//	this.refreshToken(this.checkInSecret, &this.checkInApi.token)
-	//	this.refreshToken(this.approvalSecret, &this.approvalApi.token)
+	this.refreshToken(this.checkInSecret, &this.checkInApi.token)
+	this.refreshToken(this.approvalSecret, &this.approvalApi.token)
 	this.refreshToken(this.messageSecret, &this.messageApi.token)
 }
 

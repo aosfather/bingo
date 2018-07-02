@@ -188,8 +188,7 @@ type WxCorpSuite struct {
 	//	contexts         map[string]*wxCorpAppContext
 }
 
-func (this *WxCorpSuite) Init(app bingo.Application, stage CorpDataStage) {
-	prefix := app.Name
+func (this *WxCorpSuite) Init(prefix string, app *bingo.ApplicationContext, stage CorpDataStage) {
 	this.dataStage = stage
 	this.corpId = app.GetPropertyFromConfig(prefix + ".wx.corpid")
 	this.corpSecret = app.GetPropertyFromConfig(prefix + ".wx.secret")
