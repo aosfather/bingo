@@ -204,7 +204,7 @@ type CorpChangeContact struct {
 	UserID      string
 	NewUserID   string
 	Name        string
-	Department  []int
+	Department  string
 	Mobile      string
 	Position    string
 	Gender      int

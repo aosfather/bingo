@@ -3,6 +3,7 @@ package wxcorp
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 /**
@@ -51,7 +52,15 @@ type contactUser struct {
 
 func (this *contactUser) ToWxUser() WxUser {
 
-	user := WxUser{this.Id, this.Id, this.Name, this.Avatar, this.Departments, this.Mobile, this.Position, this.Gender, this.Email, this.Status, this.EnglishName, this.IsLeader, this.Telephone, nil}
+	departs := ""
+	for index, v := range this.Departments {
+		if index > 0 {
+			departs += ","
+		}
+		departs += strconv.Itoa(v)
+	}
+
+	user := WxUser{this.Id, this.Id, this.Name, this.Avatar, departs, this.Mobile, this.Position, this.Gender, this.Email, this.Status, this.EnglishName, this.IsLeader, this.Telephone, nil}
 
 	return user
 

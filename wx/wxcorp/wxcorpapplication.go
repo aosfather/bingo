@@ -79,7 +79,7 @@ type WxUser struct {
 	NewId       string            //新的UserID，变更时推送（userid由系统生成时可更改一次）
 	Name        string            //成员名称
 	Avatar      string            //头像
-	Departments []int             //所属部门
+	Departments string            //所属部门
 	Mobile      string            //手机
 	Position    string            //职位
 	Gender      int               //性别，变更时推送。1表示男性，2表示女性
@@ -291,10 +291,7 @@ func (this *WxCorpSuite) processCorpAuthMsg(msg []byte) bool {
 	xml.Unmarshal(msg, &xmlmsg)
 	fmt.Printf("/ncorpauth:%s", xmlmsg)
 	//通过得到的authcode获取永久授权
-	this.GetPermanentCode(xmlmsg.AuthCode)
-
-	//通知授权了。
-
+	this.GetPermanentCode(xmlmsg.AuthCode) //通知授权了。
 	return true
 
 }
