@@ -126,19 +126,19 @@ func convertToWxUser(xmlbyte []byte) WxUser {
 //组织通讯录表换授权
 type CorpOrgChangeHandle interface {
 	//新增部门
-	AddDepart(depart WxDepart)
+	AddDepart(corpid string, depart WxDepart)
 	//更新部门
-	UpdateDepart(depart WxDepart)
+	UpdateDepart(corpid string, depart WxDepart)
 	//删除部门
-	DeleteDepart(depart int64)
+	DeleteDepart(corpid string, depart int64)
 	//更新标签
-	UpdateTag(tag WxTag)
+	UpdateTag(corpid string, tag WxTag)
 	//新增员工
-	AddEmployee(user WxUser)
+	AddEmployee(corpid string, user WxUser)
 	//更新员工
-	UpdateEmployee(user WxUser)
+	UpdateEmployee(corpid string, user WxUser)
 	//删除员工
-	DeleteEmployee(userId string)
+	DeleteEmployee(corpid string, userId string)
 }
 
 type WxValidateRequest struct {
@@ -328,27 +328,27 @@ func (this *WxCorpSuite) processCorpContactMsg(msg []byte) {
 	switch changeType {
 	//处理员工信息变更
 	case "create_user":
-		this.orgHandle.AddEmployee(convertToWxUser(msg))
+		this.orgHandle.AddEmployee(xmlmsg.CorpId, convertToWxUser(msg))
 
 	case "update_user":
-		this.orgHandle.UpdateEmployee(convertToWxUser(msg))
+		this.orgHandle.UpdateEmployee(xmlmsg.CorpId, convertToWxUser(msg))
 
 	case "delete_user":
-		this.orgHandle.DeleteEmployee(convertToWxUser(msg).Id)
+		this.orgHandle.DeleteEmployee(xmlmsg.CorpId, convertToWxUser(msg).Id)
 
 	//处理department变更
 	case "create_party":
-		this.orgHandle.AddDepart(convertToWxDepart(msg))
+		this.orgHandle.AddDepart(xmlmsg.CorpId, convertToWxDepart(msg))
 
 	case "update_party":
-		this.orgHandle.UpdateDepart(convertToWxDepart(msg))
+		this.orgHandle.UpdateDepart(xmlmsg.CorpId, convertToWxDepart(msg))
 	case "delete_party":
-		this.orgHandle.DeleteDepart(convertToWxDepart(msg).Id)
+		this.orgHandle.DeleteDepart(xmlmsg.CorpId, convertToWxDepart(msg).Id)
 
 	case "update_tag": //处理tag变更
 		tag := WxTag{}
 		tag.Init(msg)
-		this.orgHandle.UpdateTag(tag)
+		this.orgHandle.UpdateTag(xmlmsg.CorpId, tag)
 
 	}
 
@@ -463,11 +463,11 @@ func (this *WxCorpSuite) initCorpContact(corpId string) {
 		deptList := contactApi.GetDepartmentList()
 		//循环创建新增部门
 		for _, dept := range deptList.List {
-			this.orgHandle.AddDepart(dept.ToWxDepart())
+			this.orgHandle.AddDepart(corpId, dept.ToWxDepart())
 			//遍历部门内的员工进行同步
 			usrList := contactApi.GetDepartmentUserList(dept.Id)
 			for _, usr := range usrList.List {
-				this.orgHandle.AddEmployee(usr.ToWxUser())
+				this.orgHandle.AddEmployee(corpId, usr.ToWxUser())
 			}
 
 		}
