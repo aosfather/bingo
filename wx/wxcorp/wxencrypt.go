@@ -94,7 +94,7 @@ func (this *CorpEncrypt) VerifyURL(msg_signature, timestamp, nonce, echostr stri
 		return 40001, "signature validate failed"
 
 	}
-	return 0, this.decrypt(echostr)
+	return 0, this.decrypt(echostr, "")
 
 }
 
@@ -115,7 +115,7 @@ func (this *CorpEncrypt) DecryptInputMsg(msg_signature, timestamp, nonce string,
 		return 40001, "signature validate failed!"
 	}
 
-	msg := this.decrypt(postdata.Encrypt)
+	msg := this.decrypt(postdata.Encrypt, postdata.ToUserName)
 	if msg == "" {
 		return 40005, ""
 	}
@@ -149,7 +149,7 @@ func (this *CorpEncrypt) encrypt(text string) string {
 }
 
 //解密
-func (this *CorpEncrypt) decrypt(encryptstr string) string {
+func (this *CorpEncrypt) decrypt(encryptstr string, targetcorpid string) string {
 	//1、解析base64
 	str, _ := base64.StdEncoding.DecodeString(encryptstr)
 	sourcebytes := this.theAES.decrypt(str)
@@ -164,7 +164,7 @@ func (this *CorpEncrypt) decrypt(encryptstr string) string {
 	fmt.Println("the corpid:[" + string(corpid) + "]")
 	corp := strings.TrimSpace(string(corpid))
 	fmt.Printf("%s,%s:", this.corpid, this.suiteid)
-	if this.corpid == corp || this.suiteid == corp {
+	if this.corpid == corp || this.suiteid == corp || targetcorpid == corp {
 		fmt.Println("yes!")
 		return string(text)
 

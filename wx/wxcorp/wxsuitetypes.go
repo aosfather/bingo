@@ -216,3 +216,114 @@ type CorpChangeContact struct {
 	Telephone   string
 	ExtAttr     []CorpContactItem `xml:"ExtAttr>Item"`
 }
+
+//基本消息格式
+type xmlBaseMessage struct {
+	FromUserName string
+	ToUserName   string
+	CreateTime   int64
+	MsgType      string
+	MsgId        int64
+	AgentId      int64
+}
+
+//文本消息
+type xmlTextMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlBaseMessage
+	Content string
+}
+
+//图片消息
+type xmlImageMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlBaseMessage
+	PicUrl  string //图片路径
+	MediaId string //媒体id
+}
+
+//语音消息
+type xmlVoiceMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlBaseMessage
+	MediaId string //媒体id
+	Format  string //文件格式
+}
+
+//视频消息
+type xmlVideoMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlBaseMessage
+	MediaId      string //视频媒体文件id，可以调用获取媒体文件接口拉取数据，仅三天内有效
+	ThumbMediaId string //视频消息缩略图的媒体id，可以调用获取媒体文件接口拉取数据，仅三天内有效
+}
+
+//地址消息
+type xmlLocationMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlBaseMessage
+	X     float64 `xml:"Location_X"` //地理位置纬度
+	Y     float64 `xml:"Location_Y"` //地理位置经度
+	Scale int64   //地图缩放大小
+	Label string  //地理位置信息
+}
+
+//连接消息
+type xmlLinkMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlBaseMessage
+	Title       string //标题
+	Description string //描述
+	PicUrl      string //封面缩略图的url
+}
+
+//被动回复消息格式
+type xmlReplyBaseMessage struct {
+	FromUserName string
+	ToUserName   string
+	CreateTime   int64
+	MsgType      string
+}
+
+//文本回复消息
+type xmlReplyTextMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlReplyBaseMessage
+	Content string
+}
+
+type xmlReplyImageMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlReplyBaseMessage
+	Content xmlReplyImageContent
+}
+
+type xmlReplyVoiceMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlReplyBaseMessage
+	Content xmlReplyVoiceContent
+}
+
+type xmlReplyVideoMessage struct {
+	XMLName xml.Name `xml:"xml"`
+	xmlReplyBaseMessage
+	Content xmlReplyVideoContent
+}
+
+type xmlReplyImageContent struct {
+	XMLName xml.Name `xml:"Image"`
+	MediaId string   //媒体id
+}
+
+type xmlReplyVoiceContent struct {
+	XMLName xml.Name `xml:"Voice"`
+	MediaId string   //媒体id
+}
+
+type xmlReplyVideoContent struct {
+	XMLName     xml.Name `xml:"Video"`
+	MediaId     string   //媒体id
+	Title       string   //标题
+	Description string   //描述
+
+}

@@ -7,28 +7,14 @@ import (
 
 	"github.com/aosfather/bingo"
 	"github.com/aosfather/bingo/mvc"
+	"github.com/aosfather/bingo/utils"
+	"strings"
 )
 
 const (
 	WXAPI_HEADER      = "https://qyapi.weixin.qq.com/cgi-bin/service/"
 	CATALOG_PERMANENT = "PermanentCode"
 )
-
-//企业token等信息存储
-type CorpDataStage interface {
-	SaveCode(catalog, corpId, code string) //保存code
-	GetCode(catalog, corpId string) string //获取保存的Code
-}
-
-//应用授权的handle
-type CorpApplicationHandle interface {
-	//新授权应用
-	NewCorp(corp CorpAuthInfo, agents []CorpAgentInfo, admin CorpAdminInfo)
-	//更新授权
-	UpdateAuth(corp CorpAuthInfo, agents []CorpAgentInfo)
-	//删除授权
-	DeleteAuth(corpid string)
-}
 
 //部门
 type WxDepart struct {
@@ -123,24 +109,6 @@ func convertToWxUser(xmlbyte []byte) WxUser {
 	return wxusr
 }
 
-//组织通讯录表换授权
-type CorpOrgChangeHandle interface {
-	//新增部门
-	AddDepart(corpid string, depart WxDepart)
-	//更新部门
-	UpdateDepart(corpid string, depart WxDepart)
-	//删除部门
-	DeleteDepart(corpid string, depart int64)
-	//更新标签
-	UpdateTag(corpid string, tag WxTag)
-	//新增员工
-	AddEmployee(corpid string, user WxUser)
-	//更新员工
-	UpdateEmployee(corpid string, user WxUser)
-	//删除员工
-	DeleteEmployee(corpid string, userId string)
-}
-
 type WxValidateRequest struct {
 	Timestamp string `Field:"timestamp"`
 	Nonce     string `Field:"nonce"`
@@ -182,10 +150,12 @@ type WxCorpSuite struct {
 	suitePreAuthCode SuitePreAuthCode
 	appHandle        CorpApplicationHandle //授权handle
 	orgHandle        CorpOrgChangeHandle   //组织变化handle
+	replyHandle      MessageReplyHandle    //消息回复handle
 	dataStage        CorpDataStage         //企业及永授权code存储
 	hub              wxCorpApplicationHub
 	contexts         map[string]*wxAuthCorpcontext
 	//	contexts         map[string]*wxCorpAppContext
+	logger utils.Log
 }
 
 func (this *WxCorpSuite) Init(prefix string, app *bingo.ApplicationContext, stage CorpDataStage) {
@@ -203,7 +173,12 @@ func (this *WxCorpSuite) Init(prefix string, app *bingo.ApplicationContext, stag
 	if this.dataStage != nil {
 		this.suiteTicket = this.dataStage.GetCode("suite", this.suiteId)
 	}
+	this.logger = app.GetLog("wxcorpsuite")
 
+}
+
+func (this *WxCorpSuite) SetReplyHandle(handle MessageReplyHandle) {
+	this.replyHandle = handle
 }
 
 func (this *WxCorpSuite) SetHandle(app CorpApplicationHandle, contact CorpOrgChangeHandle) {
@@ -223,7 +198,7 @@ func (this *WxCorpSuite) GetParameType(method string) interface{} {
 
 func (this *WxCorpSuite) Get(c mvc.Context, p interface{}) (interface{}, mvc.BingoError) {
 	if q, ok := p.(*WxValidateRequest); ok {
-		fmt.Println(q)
+		this.logger.Info("wx validate %v", q)
 		ret, result := this.encryted.VerifyURL(q.Signature, q.Timestamp, q.Nonce, q.Echostr)
 		if ret == 0 {
 			return result, nil
@@ -238,14 +213,29 @@ func (this *WxCorpSuite) Get(c mvc.Context, p interface{}) (interface{}, mvc.Bin
 //正常的访问消息处理
 func (this *WxCorpSuite) Post(c mvc.Context, p interface{}) (interface{}, mvc.BingoError) {
 	if msg, ok := p.(*WxSuitInputMsg); ok {
-		fmt.Printf("/ndo:%s", msg)
+		this.logger.Debug("msg:%s", msg)
 		ret, result := this.encryted.DecryptInputMsg(msg.Signature, msg.Timestamp, msg.Nonce, msg.GetInput())
-		fmt.Printf("/n result:%i,%s", ret, result)
+		this.logger.Debug("msg result:%i,%s", ret, result)
 		if ret == 0 {
+			//消息事件
+			if strings.Contains(result, "ToUserName") {
+				data := []byte(result)
+				message := xmlBaseMessage{}
+				xml.Unmarshal(data, &message)
+				this.logger.Debug("user msg:%s", message)
+				switch message.MsgType {
+				case "text": //文本消息
+					return this.processTextMsg(data), nil
+
+				}
+
+			}
+
+			//第三方回调事件
 			data := []byte(result)
 			inputmsg := baseCorpMsg{}
 			xml.Unmarshal(data, &inputmsg)
-			fmt.Printf("/nevent:%s", inputmsg)
+			this.logger.Debug("event:%s", inputmsg)
 			switch inputmsg.Type {
 			case "suite_ticket": //推送suite_ticket
 				this.processSuiteTicketMsg(data)
@@ -263,6 +253,7 @@ func (this *WxCorpSuite) Post(c mvc.Context, p interface{}) (interface{}, mvc.Bi
 				this.processCorpAuthChangeMsg(data, true)
 			case "change_contact": //通讯录变更通知
 				this.processCorpContactMsg(data)
+
 			}
 
 		}
@@ -273,23 +264,47 @@ func (this *WxCorpSuite) Post(c mvc.Context, p interface{}) (interface{}, mvc.Bi
 
 }
 
+func (this *WxCorpSuite) processTextMsg(data []byte) string {
+	xmlmsg := xmlTextMessage{}
+	xml.Unmarshal(data, &xmlmsg)
+	if this.replyHandle != nil {
+		reply := this.replyHandle.ReplyMsg(WMT_Text, xmlmsg.Content, "", "")
+		if reply != nil {
+			msg := xmlReplyTextMessage{}
+			msg.Content = reply.Title
+			msg.FromUserName = xmlmsg.ToUserName
+			msg.ToUserName = xmlmsg.FromUserName
+			msg.MsgType = "text"
+			msg.CreateTime = time.Now().Unix()
+			enmsg, _ := xml.Marshal(msg)
+			_, result := this.encryted.EncryptMsg(string(enmsg), "wxcorpxingyun", fmt.Sprintf("%d", msg.CreateTime))
+
+			return result
+		}
+
+	}
+
+	return "no reply"
+
+}
+
 //解析推送的ticket消息，并更新suiteTicket
 func (this *WxCorpSuite) processSuiteTicketMsg(msg []byte) {
 	xmlmsg := CorpTickMsg{}
 	xml.Unmarshal(msg, &xmlmsg)
-	fmt.Printf("/nticket:%s", xmlmsg)
+	this.logger.Debug("ticket:%s", xmlmsg)
 	this.suiteTicket = xmlmsg.Ticket
 	if this.dataStage != nil {
 		this.dataStage.SaveCode("suite", this.suiteId, this.suiteTicket)
 	}
-	fmt.Println(this.suiteTicket)
+	this.logger.Debug(this.suiteTicket)
 
 }
 
 func (this *WxCorpSuite) processCorpAuthMsg(msg []byte) bool {
 	xmlmsg := CorpAuthMsg{}
 	xml.Unmarshal(msg, &xmlmsg)
-	fmt.Printf("/ncorpauth:%s", xmlmsg)
+	this.logger.Debug("corpauth:%s", xmlmsg)
 	//通过得到的authcode获取永久授权
 	this.GetPermanentCode(xmlmsg.AuthCode) //通知授权了。
 	return true
@@ -430,7 +445,7 @@ func (this *WxCorpSuite) GetPermanentCode(authCode string) bool {
 	query.AuthCode = authCode
 	permanent := CorpPermanentAuth{}
 	if this.callApi("get_permanent_code", query, &permanent) {
-		fmt.Printf("get permanentCode:%v", permanent)
+		this.logger.Debug("get permanentCode:%v", permanent)
 
 		//存储permanent code
 		if this.dataStage != nil {
@@ -443,7 +458,7 @@ func (this *WxCorpSuite) GetPermanentCode(authCode string) bool {
 		}
 		// 通知 通讯录变更处理，同步通讯录
 
-		this.initCorpContact(permanent.Corpinfo.Id)
+		go this.initCorpContact(permanent.Corpinfo.Id)
 
 		return true
 	}
@@ -499,28 +514,28 @@ func (this *WxCorpSuite) GetAuthCorpApi() WxAuthCorpApi {
 func (this *WxCorpSuite) GetAuthCorpContext(corpid string) *wxAuthCorpcontext {
 	context := this.contexts[corpid]
 	if context == nil && this.dataStage != nil {
+		context = CreateAuthCorpContext(this, corpid)
 		//通过永久授权码获取访问accesstoken
-		pcode := this.dataStage.GetCode(CATALOG_PERMANENT, corpid)
-		token := this.GetCorpAccessToken(corpid, pcode)
-		context = &wxAuthCorpcontext{corpid, token.Token}
+		//pcode := this.dataStage.GetCode(CATALOG_PERMANENT, corpid)
+		//token := this.GetCorpAccessToken(corpid, pcode)
+		//context = &wxAuthCorpcontext{corpid, token.Token}
 		this.contexts[corpid] = context
 
 	}
-
+	context.Refresh()
 	return context
 
 }
 
 func (this *WxCorpSuite) callApi(apiname string, data interface{}, response interface{}) bool {
 	theUrl := WXAPI_HEADER + apiname + "?suite_access_token=" + this.suiteAccessToken.AccessToken
-	fmt.Println(theUrl)
-	fmt.Println(data)
+	this.logger.Debug("call wx api %s [%s]", theUrl, data)
 	err := PostToWx(theUrl, data, response)
 	if err == nil {
 
 		return true
 	} else {
-		fmt.Println(err.Error())
+		this.logger.Error("call wx api %s error!:%s", apiname, err.Error())
 	}
 	return false
 }
