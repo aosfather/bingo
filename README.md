@@ -11,13 +11,16 @@ the simple framework for light web application
 #bingo 结构已经做了一定的重构，并且增加了一些默认约定来减少代码
 
 # Road Map
+* gRpc服务的支持
 * 钉钉应用开发支持
 * 云之家应用开发支持
 
 ------------------------------------------------
 ## 已经实现的特性
-* 提供session的实现
+* url的绑定支持了rest风格，允许在url上有参数，例如 /xx/:name/:id/info,其中name和id为参数
+* 提供了企业微信应用的开发的支持
 * 提供微信公众号开发的支持
+* 提供session的实现
 * 提供一些常用open api的封装
 * 新增BaseDao实现，减少应用自行写操作数据库存储的代码
 * 提供了Value，Inject tag，用于自动初始化对象，减少构建和初始化struct的代码
