@@ -8,9 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
-	"github.com/aosfather/bingo/utils"
 	"strings"
+
+	"github.com/aosfather/bingo/utils"
 )
 
 /*
@@ -119,8 +121,16 @@ func writeUseTemplate(writer http.ResponseWriter, templateName, content string, 
 	}
 }
 
+func addParamsToForm(values url.Values, p Params) {
+	if len(p) > 0 {
+		for _, p1 := range p {
+			values[p1.Key] = []string{p1.Value}
+		}
+	}
+}
+
 //解析输入
-func parseRequest(logger utils.Log,request *http.Request, target interface{}) {
+func parseRequest(logger utils.Log, request *http.Request, p Params, target interface{}) {
 	//静态资源的处理
 	if sr, ok := target.(*StaticResource); ok {
 		sr.Type = request.Header.Get(_CONTENT_TYPE)
@@ -129,13 +139,14 @@ func parseRequest(logger utils.Log,request *http.Request, target interface{}) {
 	}
 
 	contentType := request.Header.Get(_CONTENT_TYPE)
-	if _CONTENT_TYPE_JSON == contentType || _CONTENT_JSON == contentType||strings.Contains(contentType,_CONTENT_TYPE_JSON) { //处理为json的输入
+	if _CONTENT_TYPE_JSON == contentType || _CONTENT_JSON == contentType || strings.Contains(contentType, _CONTENT_TYPE_JSON) { //处理为json的输入
 		input, err := ioutil.ReadAll(request.Body)
 		logger.Debug(string(input))
 		defer request.Body.Close()
 		if err == nil {
 			if request.Form == nil {
 				request.ParseForm()
+				addParamsToForm(request.Form, p)
 			}
 			//parameters := make(map[string]interface{})
 			//err=json.Unmarshal(input, &parameters)
@@ -146,26 +157,26 @@ func parseRequest(logger utils.Log,request *http.Request, target interface{}) {
 
 			utils.FillStructByForm(request.Form, target)
 
-			jsonTarget:=target
+			jsonTarget := target
 			if sr, ok := target.(MutiStruct); ok {
 
-				jsonTarget=sr.GetData()
+				jsonTarget = sr.GetData()
 
 			}
 
-				err=json.Unmarshal(input,jsonTarget)
-				if err!=nil {
-					logger.Error("parse request body as json error:%s",err)
-				}
+			err = json.Unmarshal(input, jsonTarget)
+			if err != nil {
+				logger.Error("parse request body as json error:%s", err)
+			}
 
-
-		}else {
-			logger.Debug("read request body error:%s",err)
+		} else {
+			logger.Debug("read request body error:%s", err)
 		}
 
 	} else { //标准form的处理
 		if request.Form == nil {
 			request.ParseForm()
+			addParamsToForm(request.Form, p)
 		}
 
 		formvalues := request.Form

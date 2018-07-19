@@ -3,8 +3,9 @@ package mvc
 import (
 	"net/http"
 	"strings"
-	"github.com/aosfather/bingo/utils"
+
 	"github.com/aosfather/bingo/sql"
+	"github.com/aosfather/bingo/utils"
 )
 
 type CustomHandlerInterceptor interface {
@@ -96,19 +97,21 @@ func (this *ContextImp) commit() {
 }
 
 type DefaultRouter struct {
-	defaultConvert    defaultResponseConverter
-	routerMap         map[string]*RouterRule
-	interceptor       defaultHandlerInterceptor
-	staticHandler     HttpMethodHandler
+	defaultConvert defaultResponseConverter
+	routerMap      map[string]*RouterRule
+	routerTree     *node
+	interceptor    defaultHandlerInterceptor
+	staticHandler  HttpMethodHandler
 	//validates         ValidateManager
 	sqlsessionfactory *sql.SessionFactory
-	logger utils.Log
+	logger            utils.Log
 }
 
 func (this *DefaultRouter) Init(sqlfactory *sql.SessionFactory) {
 	this.sqlsessionfactory = sqlfactory
 	//this.validates.Init(&DefaultValidaterFactory{})
 }
+
 //func (this *DefaultRouter)Validate(obj interface{}) []BingoError{
 //	if this.validates.factory==nil {
 //		this.validates.Init(&DefaultValidaterFactory{})
@@ -117,19 +120,19 @@ func (this *DefaultRouter) Init(sqlfactory *sql.SessionFactory) {
 //	return this.validates.Validate(obj)
 //}
 
-func (this *DefaultRouter)AddInterceptor(h CustomHandlerInterceptor){
-	if h!=nil {
+func (this *DefaultRouter) AddInterceptor(h CustomHandlerInterceptor) {
+	if h != nil {
 		this.interceptor.addInterceptor(h)
 	}
 
 }
 
-func (this *DefaultRouter)SetStaticControl(path string,l utils.Log){
-	this.staticHandler=&staticController{staticDir: path,log:l}
+func (this *DefaultRouter) SetStaticControl(path string, l utils.Log) {
+	this.staticHandler = &staticController{staticDir: path, log: l}
 
 }
-func(this *DefaultRouter)SetLog(l utils.Log){
-	this.logger=l
+func (this *DefaultRouter) SetLog(l utils.Log) {
+	this.logger = l
 }
 
 func (this *DefaultRouter) SetTemplateRoot(dir string) {
@@ -139,12 +142,18 @@ func (this *DefaultRouter) SetTemplateRoot(dir string) {
 
 }
 func (this *DefaultRouter) AddRouter(rule *RouterRule) {
-	if this.routerMap == nil {
-		this.routerMap = make(map[string]*RouterRule)
+	if this.routerTree == nil {
+		this.routerTree = &node{}
 	}
 	if rule != nil {
-		this.routerMap[rule.url] = rule
+		this.routerTree.addRoute(rule.url, rule)
 	}
+	//	if this.routerMap == nil {
+	//		this.routerMap = make(map[string]*RouterRule)
+	//	}
+	//	if rule != nil {
+	//		this.routerMap[rule.url] = rule
+	//	}
 
 }
 
@@ -161,20 +170,25 @@ func (this *DefaultRouter) doConvert(writer http.ResponseWriter, rule *RouterRul
 	}
 }
 
-func (this *DefaultRouter) match(uri string) *RouterRule {
+func (this *DefaultRouter) match(uri string) (*RouterRule, Params) {
 	paramIndex := strings.Index(uri, "?")
-	if paramIndex == -1 {
-		return this.routerMap[uri]
-	} else {
-		realuri := strings.TrimSpace((uri[:paramIndex]))
-		return this.routerMap[realuri]
+	realuri := uri
+	if paramIndex != -1 {
+		realuri = strings.TrimSpace((uri[:paramIndex]))
 	}
+
+	//	return this.routerMap[realuri]
+	h, p, _ := this.routerTree.getValue(realuri)
+	if h == nil {
+		return nil, p
+	}
+	return h.(*RouterRule), p
 }
 
-func (this *DefaultRouter) doMethod(request *http.Request, handler HttpMethodHandler) (interface{}, BingoError) {
+func (this *DefaultRouter) doMethod(request *http.Request, handler HttpMethodHandler, p Params) (interface{}, BingoError) {
 	method := request.Method
 	param := handler.GetParameType(method)
-	parseRequest(this.logger,request, param)
+	parseRequest(this.logger, request, p, param)
 	errors := Validate(param)
 	if errors != nil && len(errors) > 0 {
 		var errorText string
@@ -221,7 +235,7 @@ func (this *DefaultRouter) doMethod(request *http.Request, handler HttpMethodHan
 
 func (this *DefaultRouter) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	uri := request.RequestURI
-	rule := this.match(uri)
+	rule, p := this.match(uri)
 	//handler前拦截器处理
 	if !this.interceptor.PreHandle(writer, request, rule) {
 		return
@@ -235,7 +249,7 @@ func (this *DefaultRouter) ServeHTTP(writer http.ResponseWriter, request *http.R
 	}
 
 	//执行handler处理
-	obj, err := this.doMethod(request, handler)
+	obj, err := this.doMethod(request, handler, p)
 
 	//handler处理完后，拦截器进行额外补充处理
 	if mv, ok := obj.(ModelView); ok {
