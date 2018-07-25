@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"strings"
+
 	"github.com/aosfather/bingo"
 	"github.com/aosfather/bingo/mvc"
 	"github.com/aosfather/bingo/utils"
-	"strings"
 )
 
 const (
@@ -159,6 +160,7 @@ type WxCorpSuite struct {
 }
 
 func (this *WxCorpSuite) Init(prefix string, app *bingo.ApplicationContext, stage CorpDataStage) {
+	this.logger = app.GetLog("wxcorpsuite")
 	this.dataStage = stage
 	this.corpId = app.GetPropertyFromConfig(prefix + ".wx.corpid")
 	this.corpSecret = app.GetPropertyFromConfig(prefix + ".wx.secret")
@@ -172,8 +174,8 @@ func (this *WxCorpSuite) Init(prefix string, app *bingo.ApplicationContext, stag
 
 	if this.dataStage != nil {
 		this.suiteTicket = this.dataStage.GetCode("suite", this.suiteId)
+		this.RefreshSuiteToken()
 	}
-	this.logger = app.GetLog("wxcorpsuite")
 
 }
 
@@ -297,6 +299,7 @@ func (this *WxCorpSuite) processSuiteTicketMsg(msg []byte) {
 	if this.dataStage != nil {
 		this.dataStage.SaveCode("suite", this.suiteId, this.suiteTicket)
 	}
+	this.RefreshSuiteToken()
 	this.logger.Debug(this.suiteTicket)
 
 }
@@ -381,13 +384,14 @@ func (this *WxCorpSuite) getCorpAuthInfo(corpId string) CorpAuthInfoResult {
 
 func (this *WxCorpSuite) RefreshSuiteToken() {
 	nao := time.Duration(this.suiteAccessToken.Expires) * time.Second
-	if this.suiteAccessToken.UpdateTime.Add(nao).Before(time.Now()) {
+	if this.suiteAccessToken.AccessToken == "" || this.suiteAccessToken.UpdateTime.Add(nao).Before(time.Now()) {
 		query := SuiteTokenQuery{}
 		query.Id = this.suiteId
 		query.Secret = this.suiteSecret
 		query.Ticket = this.suiteTicket
 
 		theUrl := WXAPI_HEADER + "get_suite_token"
+		this.logger.Debug("get suit token:%s", theUrl)
 		accessToken := SuiteAccessToken{}
 		err := PostToWx(theUrl, query, &accessToken)
 		if err == nil {
@@ -538,4 +542,56 @@ func (this *WxCorpSuite) callApi(apiname string, data interface{}, response inte
 		this.logger.Error("call wx api %s error!:%s", apiname, err.Error())
 	}
 	return false
+}
+
+func (this *WxCorpSuite) callNewApi(apiname string, data interface{}, response interface{}) bool {
+	theUrl := WXAPI_HEADER + apiname + "?access_token=" + this.suiteAccessToken.AccessToken
+	this.logger.Debug("call wx api %s [%s]", theUrl, data)
+	err := PostToWx(theUrl, data, response)
+	if err == nil {
+
+		return true
+	} else {
+		this.logger.Error("call wx api %s error!:%s", apiname, err.Error())
+	}
+	return false
+}
+
+//根据auth code 获取登录信息
+func (this *WxCorpSuite) GetLoginInfo(code string) *LoginInfo {
+	request := loginInfoRequest{code}
+	response := LoginInfo{}
+	if this.callNewApi("get_login_info", request, &response) {
+		return &response
+	}
+
+	return nil
+
+}
+
+type corpInfo struct {
+	Id string `json:"corpid"`
+}
+type authInfo struct {
+	Department []departmentAuthInfo
+}
+type departmentAuthInfo struct {
+	Id       string `json:"id"`
+	Writable string `json:"writable"`
+}
+type agentInfo struct {
+	Id   int64 `json:"agentid"`
+	Type int64 `json:"auth_type"`
+}
+type LoginInfo struct {
+	baseMessage
+	UserType int64        `json:"usertype"`
+	User     WxUserDetail `json:"user_info"`
+	Corp     corpInfo     `json:"corp_info"`
+	Auth     authInfo     `json:"auth_info"`
+	Agent    []agentInfo  `json:"agent"`
+}
+
+type loginInfoRequest struct {
+	Code string `json:"auth_code"`
 }
