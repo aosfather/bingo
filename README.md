@@ -11,6 +11,7 @@ the simple framework for light web application
 # bingo 结构已经做了一定的重构，并且增加了一些默认约定来减少代码
 
 # Road Map
+* 支持通过tag来设置controller的url绑定
 * gRpc服务的支持
 * 钉钉应用开发支持
 * 云之家应用开发支持
