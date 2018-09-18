@@ -5,6 +5,26 @@ import (
 	"time"
 )
 
+//事件类型
+const (
+	EVENT_SUB      = "subscribe"   //订阅
+	EVENT_UNSUB    = "unsubscribe" //取消订阅
+	EVENT_SCAN     = "SCAN"        //扫描
+	EVENT_LOCATION = "LOCATION"    //地址
+	EVENT_CLICK    = "CLICK"       //点击
+	EVENT_VIEW     = "VIEW"        //跳转
+
+	//消息类型
+	MSGTYPE_TEXT        = "text"
+	MSGTYPE_IMAGE       = "image"
+	MSGTYPE_VIDEO       = "video"
+	MSGTYPE_SHORT_VIDEO = "shortvideo"
+	MSGTYPE_VOICE       = "voice"
+	MSGTYPE_LOCATION    = "location"
+	MSGTYPE_LINK        = "link"
+	MSGTYPE_EVENT       = "event"
+)
+
 const (
 	Text     = "text"
 	Location = "location"
