@@ -2,6 +2,8 @@ package bingo
 
 import (
 	"encoding/json"
+	"github.com/aosfather/bingo_dao"
+	"github.com/aosfather/bingo_mvc"
 	utils "github.com/aosfather/bingo_utils"
 	"io/ioutil"
 	"os"
@@ -13,6 +15,8 @@ type ApplicationContext struct {
 	logfactory *utils.LogFactory
 	services   InjectMan
 	holder     ValuesHolder
+	ds         *bingo_dao.DataSource
+	mvc        *bingo_mvc.HttpDispatcher
 }
 
 func (this *ApplicationContext) shutdown() {
@@ -22,19 +26,25 @@ func (this *ApplicationContext) shutdown() {
 	this.logfactory.Close()
 
 }
+
+func (this *ApplicationContext) completedLoaded() {
+	this.mvc.Run()
+}
 func (this *ApplicationContext) GetLog(module string) utils.Log {
 	return this.logfactory.GetLog(module)
 }
 
-func (this *ApplicationContext) GetSession() *sql.TxSession {
-	if this.factory != nil {
-		return this.factory.GetSession()
+func (this *ApplicationContext) GetConnection() *bingo_dao.Connection {
+	if this.ds != nil {
+		return this.ds.GetConnection()
 	}
 	return nil
 }
 
-func (this *ApplicationContext) CreateDao() *BaseDao {
-	return &BaseDao{this}
+func (this *ApplicationContext) CreateDao() *bingo_dao.BaseDao {
+	dao := bingo_dao.BaseDao{}
+	dao.Init(this.ds)
+	return &dao
 }
 
 //不能获取bingo自身的属性，只能获取应用自身的扩展属性
@@ -89,21 +99,27 @@ func (this *ApplicationContext) init(file string) {
 	this.holder.InitByFunction(this.GetPropertyFromConfig)
 	this.initLogFactory()
 	this.initSessionFactory()
+	this.mvc = new(bingo_mvc.HttpDispatcher)
+	this.mvc.SetLog(this.logfactory.GetLog("mvc"))
+	//this.mvc.SetPort(this.context.getProperty(""))
+	//this.mvc.SetRoot()
+	this.mvc.Init()
 }
 
 func (this *ApplicationContext) initSessionFactory() {
 	if this.config["bingo.system.usedb"] == "true" {
 		this.logfactory.Write(utils.LEVEL_INFO, "bingo", "init db")
 
-		var sqlfactory sql.SessionFactory
-		sqlfactory.DBtype = this.config["bingo.db.type"]
-		sqlfactory.DBname = this.config["bingo.db.name"]
-		sqlfactory.DBurl = this.config["bingo.db.url"]
-		sqlfactory.DBuser = this.config["bingo.db.user"]
-		sqlfactory.DBpassword = this.config["bingo.db.password"]
-		sqlfactory.Init()
+		var ds bingo_dao.DataSource
+		bingo_dao.SetLogger(this.logfactory.GetLog("dao"))
+		ds.DBtype = this.config["bingo.db.type"]
+		ds.DBname = this.config["bingo.db.name"]
+		ds.DBurl = this.config["bingo.db.url"]
+		ds.DBuser = this.config["bingo.db.user"]
+		ds.DBpassword = this.config["bingo.db.password"]
+		ds.Init()
 
-		this.factory = &sqlfactory
+		this.ds = &ds
 	}
 }
 
@@ -114,4 +130,9 @@ func (this *ApplicationContext) initLogFactory() {
 
 func (this *ApplicationContext) initServices() {
 
+}
+
+func (this *ApplicationContext) AddControl(c bingo_mvc.HttpController) {
+	this.services.InjectObject(c)
+	this.mvc.AddController(c)
 }

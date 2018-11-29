@@ -9,14 +9,16 @@ import (
 )
 
 type Application struct {
-	Name       string
-	context    ApplicationContext
-	onload     OnLoad
-	onShutdown OnDestoryHandler
+	Name          string
+	context       ApplicationContext
+	onload        OnLoad
+	onloadControl OnLoadControl
+	onShutdown    OnDestoryHandler
 }
 
-func (this *Application) SetHandler(load OnLoad) {
+func (this *Application) SetHandler(load OnLoad, loadcontrol OnLoadControl) {
 	this.onload = load
+	this.onloadControl = loadcontrol
 }
 
 func (this *Application) SetOnDestoryHandler(h OnDestoryHandler) {
@@ -51,16 +53,16 @@ func (this *Application) Run(file string) {
 		}
 	}
 	this.context.services.Inject()
-	this.mvc.Init(&this.context)
+
 	//加载controller
-	this.mvc.AddController(&rootController{})
-	if this.loadHandler != nil {
-		if !this.loadHandler(&this.mvc, &this.context) {
+	//this.mvc.AddController(&rootController{})
+	if this.onloadControl != nil {
+		if !this.onloadControl(&this.context) {
 			panic("load http handler error! please check OnLoadHandler function")
 		}
 	}
 
-	this.mvc.run()
+	this.context.completedLoaded()
 
 }
 
@@ -84,7 +86,7 @@ func (this *Application) signalListen() {
 
 func (this *Application) processShutdown() {
 	//处理关闭操作
-	this.mvc.shutdown()
+	//this.mvc()
 	//关闭service
 	this.context.shutdown()
 	//处理自定义关闭操作
@@ -98,4 +100,5 @@ func (this *Application) processShutdown() {
 
 //load函数，如果加载成功返回true，否则返回FALSE
 type OnLoad func(context *ApplicationContext) bool
+type OnLoadControl func(context *ApplicationContext) bool
 type OnDestoryHandler func() bool //shutdown的handler，用于处理关闭服务的自定义动作
