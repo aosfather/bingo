@@ -7,6 +7,7 @@ import (
 	utils "github.com/aosfather/bingo_utils"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -93,16 +94,16 @@ func (this *ApplicationContext) init(file string) {
 	if this.config == nil {
 		this.config = make(map[string]string)
 	}
-	//this.services=make(map[string]interface{})
+
 	this.services.Init(nil)
 	this.services.AddObject(this)
 	this.holder.InitByFunction(this.GetPropertyFromConfig)
 	this.initLogFactory()
 	this.initSessionFactory()
 	this.mvc = new(bingo_mvc.HttpDispatcher)
-	this.mvc.SetLog(this.logfactory.GetLog("mvc"))
-	//this.mvc.SetPort(this.context.getProperty(""))
-	//this.mvc.SetRoot()
+	this.mvc.Logger = this.logfactory.GetLog("mvc")
+	this.mvc.Port, _ = strconv.Atoi(this.getProperty("bingo.system.port"))
+	this.mvc.SetRoot(this.getProperty("bingo.system.static"), this.getProperty("bingo.system.template"))
 	this.mvc.Init()
 }
 
