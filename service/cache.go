@@ -7,8 +7,8 @@ package service
 import (
 	"encoding/json"
 
+	utils "github.com/aosfather/bingo_utils"
 	"github.com/go-redis/redis"
-	"github.com/aosfather/bingo/utils"
 	"time"
 )
 
@@ -43,7 +43,7 @@ type RedisCache struct {
 
 func (this *RedisCache) Init(addr string, pwd string, db int) {
 	//防止多次初始化
-	if this.client!=nil {
+	if this.client != nil {
 		return
 	}
 
@@ -159,5 +159,5 @@ func (this *RedisCache) SetNx(key string, value Object, extime int64) {
 }
 
 func ToSecond(second int64) time.Duration {
-	return time.Second*time.Duration(second)
+	return time.Second * time.Duration(second)
 }
