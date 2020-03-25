@@ -1,44 +1,51 @@
 package bingo
 
 import (
-	"strings"
-	"github.com/aosfather/bingo/utils"
-	"github.com/aosfather/bingo/sql"
-	"os"
-	"io/ioutil"
 	"encoding/json"
-	"fmt"
+	"github.com/aosfather/bingo_dao"
+	"github.com/aosfather/bingo_mvc"
+	utils "github.com/aosfather/bingo_utils"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"strings"
 )
 
 type ApplicationContext struct {
-	config  map[string]string
+	config     map[string]string
 	logfactory *utils.LogFactory
-	factory *sql.SessionFactory
-	//services map[string]interface{}
-	services utils.InjectMan
-	holder utils.ValuesHolder
+	services   InjectMan
+	holder     ValuesHolder
+	ds         *bingo_dao.DataSource
+	mvc        *bingo_mvc.HttpDispatcher
 }
 
-func (this *ApplicationContext) shutdown(){
+func (this *ApplicationContext) shutdown() {
 
 	//关闭所有service
 
 	this.logfactory.Close()
 
 }
-func (this *ApplicationContext)GetLog(module string)utils.Log {
+
+func (this *ApplicationContext) completedLoaded() {
+	this.mvc.Run()
+}
+func (this *ApplicationContext) GetLog(module string) utils.Log {
 	return this.logfactory.GetLog(module)
 }
 
-func (this *ApplicationContext) GetSession() *sql.TxSession {
-	if this.factory != nil {
-		return this.factory.GetSession()
+func (this *ApplicationContext) GetConnection() *bingo_dao.Connection {
+	if this.ds != nil {
+		return this.ds.GetConnection()
 	}
 	return nil
 }
 
-func (this *ApplicationContext)CreateDao() *BaseDao {
-	return &BaseDao{this}
+func (this *ApplicationContext) CreateDao() *bingo_dao.BaseDao {
+	dao := bingo_dao.BaseDao{}
+	dao.Init(this.ds)
+	return &dao
 }
 
 //不能获取bingo自身的属性，只能获取应用自身的扩展属性
@@ -49,24 +56,23 @@ func (this *ApplicationContext) GetPropertyFromConfig(key string) string {
 	return this.getProperty(key)
 }
 
-func (this *ApplicationContext) RegisterService(name string,service interface{}) {
-	if name!="" && service!=nil {
-		instance:=this.services.GetObjectByName(name)
-		if instance==nil {
+func (this *ApplicationContext) RegisterService(name string, service interface{}) {
+	if name != "" && service != nil {
+		instance := this.services.GetObjectByName(name)
+		if instance == nil {
 			this.holder.ProcessValueTag(service)
-			this.services.AddObjectByName(name,service)
+			this.services.AddObjectByName(name, service)
 		}
 	}
 
-
 }
 
-func (this *ApplicationContext)GetService(name string) interface{} {
-   if name!="" {
-   	   //return this.services[name]
-   	   return this.services.GetObjectByName(name)
-   }
-   return nil
+func (this *ApplicationContext) GetService(name string) interface{} {
+	if name != "" {
+		//return this.services[name]
+		return this.services.GetObjectByName(name)
+	}
+	return nil
 }
 
 func (this *ApplicationContext) getProperty(key string) string {
@@ -76,7 +82,7 @@ func (this *ApplicationContext) getProperty(key string) string {
 	return this.config[key]
 }
 
-func(this *ApplicationContext) init(file string){
+func (this *ApplicationContext) init(file string) {
 	if file != "" && utils.IsFileExist(file) {
 		f, err := os.Open(file)
 		if err == nil {
@@ -88,319 +94,46 @@ func(this *ApplicationContext) init(file string){
 	if this.config == nil {
 		this.config = make(map[string]string)
 	}
-    //this.services=make(map[string]interface{})
+
 	this.services.Init(nil)
 	this.services.AddObject(this)
 	this.holder.InitByFunction(this.GetPropertyFromConfig)
 	this.initLogFactory()
 	this.initSessionFactory()
+	this.mvc = new(bingo_mvc.HttpDispatcher)
+	this.mvc.Logger = this.logfactory.GetLog("mvc")
+	this.mvc.Port, _ = strconv.Atoi(this.getProperty("bingo.system.port"))
+	this.mvc.SetRoot(this.getProperty("bingo.system.static"), this.getProperty("bingo.system.template"))
+	this.mvc.Init()
 }
 
-func (this *ApplicationContext) initSessionFactory(){
+func (this *ApplicationContext) initSessionFactory() {
 	if this.config["bingo.system.usedb"] == "true" {
-		this.logfactory.Write(utils.LEVEL_INFO,"bingo","init db")
+		this.logfactory.Write(utils.LEVEL_INFO, "bingo", "init db")
 
-		var sqlfactory sql.SessionFactory
-		sqlfactory.DBtype = this.config["bingo.db.type"]
-		sqlfactory.DBname = this.config["bingo.db.name"]
-		sqlfactory.DBurl = this.config["bingo.db.url"]
-		sqlfactory.DBuser = this.config["bingo.db.user"]
-		sqlfactory.DBpassword = this.config["bingo.db.password"]
-		sqlfactory.Init()
+		var ds bingo_dao.DataSource
+		bingo_dao.SetLogger(this.logfactory.GetLog("dao"))
+		ds.DBtype = this.config["bingo.db.type"]
+		ds.DBname = this.config["bingo.db.name"]
+		ds.DBurl = this.config["bingo.db.url"]
+		ds.DBuser = this.config["bingo.db.user"]
+		ds.DBpassword = this.config["bingo.db.password"]
+		ds.Init()
 
-		this.factory = &sqlfactory
+		this.ds = &ds
 	}
 }
 
-func (this *ApplicationContext) initLogFactory(){
-	this.logfactory=&utils.LogFactory{}
-	this.logfactory.SetConfig(utils.LogConfig{true,this.config["bingo.log.file"]})
+func (this *ApplicationContext) initLogFactory() {
+	this.logfactory = &utils.LogFactory{}
+	this.logfactory.SetConfig(utils.LogConfig{true, this.config["bingo.log.file"]})
 }
 
-func (this *ApplicationContext)initServices(){
-
-}
-
-//load函数，如果加载成功返回true，否则返回FALSE
-type OnLoad func(context *ApplicationContext)bool
-
-//基础数据操作对象
-type BaseDao struct {
-	context *ApplicationContext
-}
-
-func (this *BaseDao)Init(c *ApplicationContext){
-	this.context=c
-}
-
-//插入，返回auto id和错误信息
-func(this *BaseDao) Insert(obj utils.Object)(int64,error){
-	if obj==nil {
-		return 0,fmt.Errorf("nil object!")
-	}
-
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		session.Begin()
-		id,count,err:=session.Insert(obj)
-
-		if err==nil&&count==1{
-			session.Commit()
-			return id,nil
-		}else {
-			session.Rollback()
-			return 0,err
-		}
-
-	}
-
-	return 0,fmt.Errorf("session is nil")
+func (this *ApplicationContext) initServices() {
 
 }
 
-//插入，返回auto id和错误信息
-func(this *BaseDao) InsertBatch(objs []utils.Object)(ids []int64, e error){
-	if objs==nil||len(objs)==0 {
-		return nil,fmt.Errorf("nil object!")
-	}
-
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		session.Begin()
-
-		for _,obj:=range objs {
-			id,_,err:=session.Insert(obj)
-
-			if err!=nil{
-				session.Rollback()
-				return nil,err
-			}
-            ids=append(ids,id)
-		}
-
-         session.Commit()
-         e=nil
-         return
-
-	}
-
-	return nil,fmt.Errorf("session is nil")
-
+func (this *ApplicationContext) AddControl(c bingo_mvc.HttpController) {
+	this.services.InjectObject(c)
+	this.mvc.AddController(c)
 }
-
-func (this *BaseDao) Find(obj utils.Object,cols ...string) bool{
-	if obj==nil {
-		return false
-	}
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		return session.Find(obj,cols...)
-	}
-   return false
-}
-
-func (this *BaseDao) FindBySql(obj utils.Object,sqlTemplate string,args ...interface{}) bool{
-	if obj==nil {
-		return false
-	}
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		return session.Query(obj,sqlTemplate,args...)
-	}
-	return false
-}
-
-//更新，返回更新的条数和错误信息
-func (this *BaseDao) Update(obj utils.Object,cols ... string)(int64,error) {
-	if obj==nil {
-		return 0,fmt.Errorf("nil object!")
-	}
-
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		session.Begin()
-		_,count,err:=session.Update(obj,cols...)
-		if err!=nil {
-			session.Rollback()
-			return 0,err
-		}else {
-			session.Commit()
-			return count,nil
-		}
-	}
-
-	return 0,fmt.Errorf("session is nil")
-}
-
-func (this *BaseDao) UpdateBatch(objs []utils.Object,cols ... string)(counts[]int64,e error) {
-	if objs==nil||len(objs)==0 {
-		return nil,fmt.Errorf("nil object!")
-	}
-
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		session.Begin()
-		for _,obj:=range objs {
-		_,count,err:=session.Update(obj,cols...)
-		if err!=nil {
-			session.Rollback()
-			return nil,err
-		}
-		counts=append(counts,count)
-
-		}
-			session.Commit()
-			e=nil
-			return
-		}
-
-	return nil,fmt.Errorf("session is nil")
-}
-
-func (this *BaseDao) Delete(obj utils.Object,cols ... string)(int64,error) {
-	if obj==nil {
-		return 0,fmt.Errorf("nil object!")
-	}
-
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		session.Begin()
-		_,count,err:=session.Delete(obj,cols...)
-		if err!=nil {
-			session.Rollback()
-			return 0,err
-		}else {
-			session.Commit()
-			return count,nil
-		}
-	}
-
-	return 0,fmt.Errorf("session is nil")
-}
-
-const _maxsize = 10000
-func (this *BaseDao) QueryAll(obj utils.Object,cols ...string)([]interface{}){
-
-	page:=sql.Page{_maxsize,0,0}
-	return this.Query(obj,page,cols...)
-
-}
-
-func (this *BaseDao) QueryAllBySql(obj utils.Object,sqlTemplate string,args ...interface{})([]interface{}){
-
-	page:=sql.Page{_maxsize,0,0}
-	if obj==nil {
-		return nil
-	}
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-			return session.QueryByPage(obj,page,sqlTemplate,args...)
-
-	}
-
-	return nil
-
-}
-
-func (this *BaseDao) Query(obj utils.Object,page sql.Page,cols ...string)([]interface{}){
-
-	if obj==nil {
-		return nil
-	}
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		theSql,args,err:=sql.CreateQuerySql(obj,cols...)
-		if err==nil {
-			return session.QueryByPage(obj,page,theSql,args...)
-		}
-
-	}
-
-	return nil
-}
-
-//执行单条sql
-func(this *BaseDao)Exec(sqltemplate string,objs ...interface{})(int64,error) {
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		session.Begin()
-		_,count,err:=session.ExeSql(sqltemplate,objs...)
-		if err==nil {
-			session.Commit()
-			return count,err
-		}
-
-		session.Rollback()
-		return 0,err
-	}
-	return 0,fmt.Errorf("session is nil")
-}
-
-//批量执行简单的sql语句
-func (this *BaseDao)ExecSqlBatch(sqls ...string) error {
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		session.Begin()
-		for _,sql:=range sqls {
-		_,_,err:=session.ExeSql(sql)
-		if err!=nil {
-			session.Rollback()
-			return err
-		}
-
-		}
-		session.Commit()
-		return nil
-	}
-	return fmt.Errorf("session is nil")
-}
-
-func (this *BaseDao)GetSession() *sql.TxSession{
-	return this.context.GetSession()
-}
-
-
-//插入对象，并根据对象的id，更新后续的sql语句，一般为update，其中这个关联id必须是第一个参数
-func (this *BaseDao)InsertAndUpdate(iobj interface{},sqltemplate string,args ...interface{}) error{
-	if iobj==nil{
-		return fmt.Errorf("nil object!")
-	}
-
-	session:=this.context.GetSession()
-	if session!=nil {
-		defer session.Close()
-		session.Begin()
-		id,count,err:=session.Insert(iobj)
-		if err==nil&&count==1 {
-			p:=[]interface{}{id}
-			if args!=nil&&len(args)>0 {
-				p=append(p,args...)
-			}
-
-			_,_,err=session.ExeSql(sqltemplate,p)
-
-			if err==nil {
-				session.Commit()
-			}
-
-		}
-
-		session.Rollback()
-		return err
-	}
-
-	return fmt.Errorf("session is nil")
-
-}
-

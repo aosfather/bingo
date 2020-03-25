@@ -12,9 +12,8 @@ import (
 	"sync"
 	"time"
 
+	utils "github.com/aosfather/bingo_utils"
 	"github.com/streadway/amqp"
-	"github.com/aosfather/bingo/utils"
-
 )
 
 type MQExchangType string
@@ -37,11 +36,11 @@ type Receiver interface {
 
 type RabbitMQConnect struct {
 	connection *amqp.Connection
-	logger utils.Log
+	logger     utils.Log
 }
 
-func (this *RabbitMQConnect)SetLogger(l utils.Log){
-	this.logger=l
+func (this *RabbitMQConnect) SetLogger(l utils.Log) {
+	this.logger = l
 }
 
 func (this *RabbitMQConnect) Connect(mqurl string) {
@@ -54,9 +53,9 @@ func (this *RabbitMQConnect) Connect(mqurl string) {
 
 }
 
-func (this *RabbitMQConnect)failOnErr(err error, text string) {
+func (this *RabbitMQConnect) failOnErr(err error, text string) {
 	if err != nil {
-		this.logger.Error("%s,%s",text,err.Error())
+		this.logger.Error("%s,%s", text, err.Error())
 		panic(err.Error())
 	}
 }
@@ -71,13 +70,13 @@ func (this *RabbitMQConnect) Close() {
 	this.failOnErr(err, "close mq connection error!")
 }
 
-func (this *RabbitMQConnect) NewClient(exchangeName string, exchangeType MQExchangType)*RabbitMQ{
+func (this *RabbitMQConnect) NewClient(exchangeName string, exchangeType MQExchangType) *RabbitMQ {
 	// 这里可以根据自己的需要去定义
-	client:= &RabbitMQ{
+	client := &RabbitMQ{
 		exchangeName: exchangeName,
 		exchangeType: exchangeType,
 	}
-	client.channel=this.GetChannel()
+	client.channel = this.GetChannel()
 	return client
 }
 
@@ -89,13 +88,12 @@ type RabbitMQ struct {
 	exchangeName string        // exchange的名称
 	exchangeType MQExchangType // exchange的类型
 	receivers    []Receiver
-	logger utils.Log
+	logger       utils.Log
 }
-
 
 func (this *RabbitMQ) Start() {
 	this.prepareExchange()
-    go this.startListen()
+	go this.startListen()
 
 }
 
@@ -131,11 +129,11 @@ func (this *RabbitMQ) prepareExchange() error {
 	err := this.channel.ExchangeDeclare(
 		this.exchangeName,         // exchange
 		string(this.exchangeType), // type
-		true,  // durable
-		false, // autoDelete
-		false, // internal
-		false, // noWait
-		nil,   // args
+		true,                      // durable
+		false,                     // autoDelete
+		false,                     // internal
+		false,                     // noWait
+		nil,                       // args
 	)
 
 	if nil != err {

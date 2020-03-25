@@ -1,13 +1,14 @@
-package utils
+package bingo
 
 import (
+	utils "github.com/aosfather/bingo_utils"
 	"reflect"
 	"strings"
 )
 
 /**
   自动压入依赖
- */
+*/
 
 const _TAG_INJECT = "Inject" //依赖
 
@@ -46,7 +47,7 @@ func (this *InjectMan) GetObject(t reflect.Type) Object {
 
 func (this *InjectMan) AssignObject(o Object) {
 	if o != nil && IsStructPtr(o) {
-		t := GetRealType(o)
+		t := utils.GetRealType(o)
 		o = this.GetObject(t)
 	}
 }
@@ -84,7 +85,7 @@ func (this *InjectMan) doInject(target Object) {
 		if fieldTag, ok := reflectType.Elem().Field(i).Tag.Lookup(_TAG_INJECT); ok {
 			fieldType := field.Type()
 			fieldName := reflectType.Elem().Field(i).Name
-            //赋值，如果无法赋值则查找Set方法进行设置
+			//赋值，如果无法赋值则查找Set方法进行设置
 			if !this.setValue(field, fieldType, fieldName, fieldTag) {
 				this.setValueByMethod(reflectValue, fieldName, fieldType, fieldTag)
 			}
@@ -93,9 +94,9 @@ func (this *InjectMan) doInject(target Object) {
 	}
 
 	//如果存在Init方法，则调用
-	initMethod:=reflectValue.MethodByName("Init")
+	initMethod := reflectValue.MethodByName("Init")
 	if initMethod.IsValid() {
-		if initMethod.Type().NumIn()==0{
+		if initMethod.Type().NumIn() == 0 {
 			initMethod.Call([]reflect.Value{})
 		}
 	}
@@ -108,14 +109,12 @@ func (this *InjectMan) InjectObject(target Object) {
 }
 
 //调用 Setxxx方法进行设置值
-func (this *InjectMan) setValueByMethod(v reflect.Value,fieldName string, ft reflect.Type, sname string) {
+func (this *InjectMan) setValueByMethod(v reflect.Value, fieldName string, ft reflect.Type, sname string) {
 	methodName := "Set" + strings.ToUpper(fieldName[:1]) + fieldName[1:]
-	rm:=v.MethodByName(methodName)
-		if rm.IsValid(){
-			rm.Call([]reflect.Value{this.getReflectValue(ft, sname)})
-		}
-
-
+	rm := v.MethodByName(methodName)
+	if rm.IsValid() {
+		rm.Call([]reflect.Value{this.getReflectValue(ft, sname)})
+	}
 
 }
 

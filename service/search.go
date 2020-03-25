@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/aosfather/bingo"
-	"github.com/aosfather/bingo/utils"
+	utils "github.com/aosfather/bingo_utils"
 	"github.com/go-redis/redis"
 )
 

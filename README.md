@@ -5,19 +5,24 @@ the simple framework for light web application
 > 一个简单的web框架，用于快速的编写web应用。支持国内一些常用平台的应用开发，如微信公众号开发、钉钉、云之家等。
 该框架是在使用beego过程中慢慢构建的，旨在直接简单，构建简单应用，该框架不是走大而全，走精干的路线，重心在以微服务应用搭建方面为主。
 在一些特性支持方面往往会偏向于约定而不是配置和自定义，如果有些特性的确很重要，而约定的又不能完全解决问题，更加倾向于框架自身实现的组件接口直接公开，由应用自己来实现一个替换框架默认的实现。
->  > 用于作者是多年的javaer，在一些特性设计上也会借鉴spring mvc等java框架中个人觉的比较好的方式和包装。
+>  由于作者是多年的javaer，在一些特性设计上也会借鉴spring mvc等java框架中个人觉的比较好的方式和包装。
 
 
 # bingo V2.0
-* 整体结构重构，bingo自身集中在MVC方面，包括IOC、ORM、RESTful的支持及微服务
-* 微信、企业微信等开放平台的支持将从bingo中移出做为扩展包
+> 整体结构重构，分为了bingo、bingo_mvc、bingo_dao、bingo_utils、bingo_wx、bingo_dingding
+> 其中：
+* bingo 具有ioc的特性，boot的特性，提供了整合cache、mvc、dao、mq等，可以快速构建一个微服务应用
+* bingo_mvc 是一个目标实现go lang版本的spring mvc框架，但目标是微服务，而不是旧的web应用，会对一些特性会消减
+* bingo_dao 是一个很轻量级的orm实现，实现了简单
+* bingo_utils 一些好用的工具类，或者是对于java转过来的程序员更加友好的封装。
+* bingo_wx 开发企业微信和微信公众号服务的封装，不用关注微信平台的通讯与接口等，只需要实现相应的响应方法即可。
+* bingo_dingding 开发钉钉第三方服务的go的封装。
 * search搜索的特性移到candy项目中，做为candy的一部分。
 
 # Road Map
 ## V2.1计划
 * 支持YML格式的配置文件
 * 支持Rest服务XML格式的序列化输出
-* 新增多语言的解决方案
 
 ## V2.2计划
 * 提供文件上传的默认实现
@@ -63,123 +68,10 @@ hello world
 package main
 import "github.com/aosfather/bingo"
 func main(){
-    application:=bingo.TApplication{}
+    application:=bingo.Application{}
     application.Run("")
 }
 
-默认端口 8090
+默认端口 8990
 
 ```
-##一个复杂点的服务
-```c
-package main
-import (
-  "fmt"
-  "github.com/aosfather/bingo"
-  "github.com/aosfather/bingo/mvc"
-  "github.com/aosfather/bingo/utils"
-)
-type myStruct struct {
-     name string `Value:"mytest"`        //自动赋值属性的tag，配置文件存在 mytest的属性值。如果不是公开的，则会调用Setxxx方法进行赋值
-     Content *secondStruct `Inject:""`   //自动装配的tag，不指名名称，会自动装配对应类型的。如果属性不是公开的，则会调用Setxxx方法
-}
-func (this *myStruct)SetName(t string){
-  this.name=t
-}
-type secondStruct struct{
-    text map[string]string `Inject:""`
-}
-
-func (this *secondStruct)SetText(m map[string]string){
-  fmt.Print("set text")
-  this.text=m
-}
-
-func (this *secondStruct)Init(){
-   fmt.Println("call the init method!")
-}
-
-
-func main(){
-  app:=bingo.TApplication{}
-  app.SetHandler(loadservice,loadcontroller) //设置服务和自动装配control的方法
-  app.SetOnDestoryHandler(destory)   //设置应用被杀掉时候的响应代码
-  app.Run("config.conf")
-}
-
-func destory()bool{
-  fmt.Println("destory")
-  return true
-
-}
-
-//加载服务
-func loadservice(context *bingo.ApplicationContext) bool{
-  context.RegisterService("test",&secondStruct{})
-  context.RegisterService("test1",&myStruct{})
-return true
-}
-
-//加载mvc中的control，也就是请求处理
-func loadcontroller(mvc *bingo.MvcEngine,context *bingo.ApplicationContext) bool {
-  mvc.AddController(&mybook{})
-  fmt.Println(context.GetService("test"))
-  p:=context.GetService("test1")  //获取对应的服务对象引用
-  if v,ok:=p.(*myStruct);ok {
-    v.Content.text["123"]="123"
-    fmt.Printf("%s",v)
-  }
-
-  return true
-}
-
-//一个control，用于响应网络请求
-//如果不指名对应的url，默认使用类型的名称，例如响应 /mybook
-type mybook struct {
-  mvc.SimpleController
-  logger utils.Log
-}
-//初始化
-func (this *mybook)Init() {
-  this.logger=this.GetBeanFactory().GetLog("mybook")
-}
-
-//响应get请求
-func (this *mybook) Get(c mvc.Context, p interface{}) (interface{}, mvc.BingoError) {
-  this.logger.Info("haha call the mybook!")
-  return "test",nil
-}
-
-
-```
-
-
-
-## conf文件样例-----json格式的配置
-* bingo.mvc.template 模板目录配置  --可选
-* bingo.mvc.static  静态资源目录   --可选
-* bingo.system.usedb 是否启用数据库，默认不启用
-* bingo.system.port 指定服务监听的端口，如果不指定默认端口8990
-* bingo.db 数据库的配置
-* * type 类型
-* * name 数据库名
-* * url 格式tcp（ip：port） 
-* * user 数据库用户名
-* * password 数据库密码
-
-样例如下
-### app.conf
-```json
-{
-	"bingo.mvc.template":"/",
-	"bingo.mvc.static":"static",
-	"bingo.system.usedb":"true",
-	"bingo.db.type":"mysql",
-	"bingo.db.name":"configs",
-	"bingo.db.url":"tcp(127.0.0.1:3306)",
-	"bingo.db.user":"root",
-	"bingo.db.password":"root"
-	
-}
-```
-

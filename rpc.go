@@ -1,11 +1,11 @@
-package rpc
+package bingo
 
 import (
 	"bytes"
 	"encoding/json"
+	utils "github.com/aosfather/bingo_utils"
 	"io/ioutil"
 	"net/http"
-	"github.com/aosfather/bingo/utils"
 )
 
 type RpcObject interface {
