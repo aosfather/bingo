@@ -1,4 +1,0 @@
-package service
-/**
-  rocket mq
- */
