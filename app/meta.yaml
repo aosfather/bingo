@@ -1,0 +1,17 @@
+types:
+  - {}
+  -
+elements:
+  - {}
+
+dicts:
+  - catalog: aa
+    items:
+      - {key: 1,label: 测试}
+
+tables:
+  - table: xxx
+    type: T
+    fields:
+      - {e: ,}
+      -
