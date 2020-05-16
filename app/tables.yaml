@@ -1,0 +1,14 @@
+tables:
+  - name: abc
+    label: test2
+    type: a
+    fields:
+      - {name: d_input,element: d1}
+    code: ft_abc
+
+structs:
+  - name: test1
+    label: test
+    type: a
+    fields:
+      - {name: input1,element: d1}
