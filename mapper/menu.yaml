@@ -1,0 +1,6 @@
+namespace: menu
+nodes:
+  - code: getallmenus
+    type: query
+    template: |
+      select * from bingo_menus where enabled={{sql .Enabled}} order by level,sortindex

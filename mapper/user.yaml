@@ -1,0 +1,10 @@
+namespace: user
+nodes:
+  - code: findbyid
+    type: find
+    template: |
+      select * from bingo_user where id={{sql .Id}}
+  - code: addnewuser
+    type: insert
+    template: |
+      insert bingo_user(id,name) values({{sql .Id}},{{sql .Name}})

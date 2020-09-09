@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+    <title>登录</title>
+    <link rel="stylesheet" href="/css/layui.css"/>
+    <style>
+        .loginForm{
+            margin-left: 35%;
+            margin-top: 10%;
+            background-color: #e7e7e7;
+            width: 400px;
+            height: 400px;
+            float: left;
+            z-index: 9999;
+            position: fixed;
+            opacity: 0.75;
+        }
+    </style>
+</head>
+<body style="background-color:#1890ff">
+<div class="loginForm">
+    <form class="layui-form bg-blue" action="" >
+        <div class="layui-form-item" style="padding-top: 60px;padding-left: 20px;">
+            <label class="layui-form-label">用户名
+                <i class="layui-icon">&#xe66f;</i>
+            </label>
+            <div class="layui-input-inline">
+                <!-- //采用inline表示可以继续放 -->
+                <input type="text" name="username"  lay-verify="required|username" placeholder="请输入用户名称" autocomplete="off" class="layui-input">
+            </div>
+
+        </div>
+        <div class="layui-form-item" style="padding-top: 20px;padding-left: 20px;">
+            <label class="layui-form-label">密码
+                <i class="layui-icon"> &#xe672;</i>
+            </label>
+            <div class="layui-input-inline">
+                <input type="password" name="userpassword"  lay-verify="required|userpassword" placeholder="请输入密码" autocomplete="off" class="layui-input">
+            </div>
+            <!-- <div class="layui-form-mid layui-word-aux"></div> -->
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <input type="checkbox" name="" title="记住我" lay-skin="primary" checked>
+            </div>
+        </div>
+        <div class="layui-form-item" style="padding-top:30px;">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit="" lay-filter="login">立即提交</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </form>
+</div>
+<script src="/layui.all.js"></script>
+<script>
+    //由于模块都一次性加载，因此不用执行 layui.use() 来加载对应模块，直接使用即可：
+    ;!function() {
+        var $ = layui.jquery;
+        var form = layui.form;//表单验证
+        var layer = layui.layer;
+        //表单验证（页面自动关联,验证结果绑定在表单）
+        form.verify({
+            username: function (value, item) { //value：表单的值、item：表单的DOM对象 自定义验证规则
+                if (!new RegExp("^[a-zA-Z0-9_\u4e00-\u9fa5\\s·.]+$").test(value)) {
+                    return '用户名不能有特殊字符';
+                }
+                if (/^\d+\d+\d$/.test(value)) {
+                    return '用户名不能全为数字';
+                }
+
+            },
+            userpassword: function (value, item) {
+                if (!/^.{6,20}$/img.test(value)) {
+                    return "密码必须位6~12位"
+                }
+            },
+        });
+        //不想提交，可以监听，使用form.on
+        form.on('submit(login)', function (data) {
+            //用ajax时需要注意你的url接口、采用哪一种方式type获取，它的使用的哪种数据类型datatype
+            $.ajax({
+                url: '/dologin',
+                type: 'post',
+                contentType:'application/json',
+                dataType: 'json',
+                data: JSON.stringify({
+                    //监听的内容有哪些,你的登陆界面上用户输入的有哪些，就监听那些
+                    username: $('input[name="username"]').val(),
+                    password: $('input[name="userpassword"]').val()
+                }),
+                beforeSend: function () {
+                    //弹出的lodinng层
+                    layer.load(2, {
+                        shade: [0.5, "#333"]
+                    });
+                },
+                success: function (res) {
+                    if (res.code == 200) {
+                        //res.code == 0,表示用户输入成功，1表示失败
+                        //获取用户输入的内容，存到本地存储，采用sessionStorage是因为用户只需输入一次，不需要保存，用户的体验感较好，也比较安全
+                        sessionStorage.setItem('admin', JSON.stringify(res.data.admindata));
+                        //获取用户数据，并存储在本地。
+                        sessionStorage.setItem('role', JSON.stringify(res.data.roledata));
+                        sessionStorage.setItem('module', JSON.stringify(res.data.moduledata));
+                        layer.msg("登陆成功", {icon: 1})
+                        setTimeout(function () {
+                            //如果输入成功，可以跳到另一个你需要的界面
+                            location.href = "/index";
+                        }, 200)
+                    } else {
+                        //不等于0时填出的内容
+                        layer.msg("登录失败："+res.msg)
+                    }
+                },
+                error: function () {
+                    //用户输入与接口内容不对应，显示文字
+                    layer.msg("网络繁忙，访问失败")
+                },
+                complete: function () {
+                    //关掉loading
+                    layer.closeAll("loading")
+                }
+            })
+            return false;//不会跳转到网址栏，只会跳转到你要的界面 一定要写。
+        });
+    }();
+</script>
+</body>
+</html>
