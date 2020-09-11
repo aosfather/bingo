@@ -12,5 +12,5 @@ func main() {
 }
 func load() []interface{} {
 
-	return nil
+	return []interface{}{&System{}}
 }

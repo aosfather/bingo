@@ -16,6 +16,10 @@ func (this *FormEngine) Render(meta *FormMeta, writer io.Writer) {
 
 }
 
+func (this *FormEngine) GetTemplate() string {
+	return "formTemplate"
+}
+
 //查询表单引擎
 type QueryFormEngine struct {
 }

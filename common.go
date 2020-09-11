@@ -3,10 +3,17 @@ package main
 import (
 	"fmt"
 	"github.com/aosfather/bingo_utils"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"runtime"
 	"time"
 )
+
+func init() {
+	log.SetFlags(log.Lmsgprefix)
+	bingo_utils.SetLogDebugFunc(debug)
+	bingo_utils.SetLogErrFunc(errs)
+}
 
 func debug(v ...interface{}) {
 	msg := fmt.Sprint(v...)

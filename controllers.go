@@ -6,8 +6,8 @@ import (
 )
 
 type FormRequest struct {
-	FormName string `Field:"name"`
-	FormType string `Field:"type"`
+	FormName string `Field:"_name"`
+	FormType string `Field:"_type"`
 }
 
 /*
@@ -19,22 +19,33 @@ type FormRequest struct {
 */
 type System struct {
 	engines map[string]RenderEngine //引擎
+	F       string                  `mapper:"name(form);url(/form);method(GET);style(HTML)"`
 }
 
 func (this *System) Init() {
 	this.engines = make(map[string]RenderEngine)
-	this.engines[""] = nil
+	this.engines["FORM"] = &FormEngine{}
+}
+func (this *System) GetHandles() bingo_mvc.HandleMap {
+	result := bingo_mvc.NewHandleMap()
+	result.Add("form", this.Form, &FormRequest{})
+	//result.Add("query", this.query, bingo_mvc.TypeOfMap())
+	return result
 }
 
 //界面显示
 func (this *System) Form(a interface{}) interface{} {
 	request := a.(*FormRequest)
+	debug(request)
 	if engine, ok := this.engines[request.FormType]; ok {
-		engine.Render(nil, nil)
-		return bingo_mvc.ModelView{engine.GetTemplate(), nil}
+		if engine != nil {
+			engine.Render(nil, nil)
+			return bingo_mvc.ModelView{engine.GetTemplate(), nil}
+		}
+
 	}
 
-	return fmt.Sprintf("request Form type %s,and %s not exits! please check", request.FormType, request.FormName)
+	return fmt.Sprintf("request Form type '%s',and Form '%s' not exits! please check", request.FormType, request.FormName)
 
 }
 
