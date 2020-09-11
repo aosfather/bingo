@@ -1,0 +1,15 @@
+bingo:
+  port: 8080
+  static: libs/static
+  template: libs/templates
+  template_fix: tp
+  usedb: false
+  db:
+    type: mysql
+    name: bingo
+    url:  test:3306
+    user: test
+    password: test
+    mapper: mapper
+
+
