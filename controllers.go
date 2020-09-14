@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/aosfather/bingo_mvc"
 )
@@ -39,8 +40,17 @@ func (this *System) Form(a interface{}) interface{} {
 	debug(request)
 	if engine, ok := this.engines[request.FormType]; ok {
 		if engine != nil {
-			engine.Render(nil, nil)
-			return bingo_mvc.ModelView{engine.GetTemplate(), nil}
+			//获取meta信息
+
+			//生成模板
+			buffer := new(bytes.Buffer)
+			engine.Render(nil, buffer)
+			p := make(map[string]string)
+			p["FORM_NAME"] = ""
+			p["FORM_TITLE"] = ""
+			p["FORM_ACTION"] = "/form/add"
+			p["FORM_FIELDS"] = buffer.String()
+			return bingo_mvc.ModelView{engine.GetTemplate(), p}
 		}
 
 	}
