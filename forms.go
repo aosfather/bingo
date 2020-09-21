@@ -6,19 +6,26 @@ import (
 	"strings"
 )
 
+type FormMetaManager interface {
+	GetFormMeta(name string) *FormMeta
+}
+
 //表单
 //案例元信息
 type FormMeta struct {
-	Code        string      `yaml:"code"`
-	Author      string      `yaml:"author"`
-	Version     string      `yaml:"version"`
-	UpdateDate  string      `yaml:"updateDate"`
-	Description string      `yaml:"description"`
-	Parameters  []Parameter `yaml:"parameters"`
-	ScriptType  string      `yaml:"scriptType"`
-	Script      string      `yaml:"script"`
+	Code        string        `yaml:"code"`
+	Author      string        `yaml:"author"`
+	Version     string        `yaml:"version"`
+	UpdateDate  string        `yaml:"updateDate"`
+	Description string        `yaml:"description"`
+	Action      string        `yaml:"action"`
+	Parameters  []Parameter   `yaml:"parameters"`
+	ScriptType  string        `yaml:"scriptType"`
+	Script      string        `yaml:"script"`
+	ResultSet   []ResultField `yaml:"resultset"`
 }
 
+//输入参数
 type Parameter struct {
 	Name       string      `yaml:"name"`
 	Policy     string      `yaml:"policy"`
@@ -26,6 +33,15 @@ type Parameter struct {
 	Type       string      `yaml:"type"`
 	Expr       string      `yaml:"expr"` //表达式
 	Conditions []Condition `yaml:"link"` //关联条件，当为 Maybe 的时候使用。
+}
+
+//结果字段
+type ResultField struct {
+	Name      string `yaml:"name"`
+	Label     string `yaml:"label"`
+	InnerName string `yaml:"inner"`
+	Type      string `yaml:"type"`
+	Expr      string `yaml:"expr"` //表达式
 }
 
 func (this *Parameter) validate(v string) error {

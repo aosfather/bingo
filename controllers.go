@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/aosfather/bingo_mvc"
 )
@@ -20,12 +19,13 @@ type FormRequest struct {
 */
 type System struct {
 	engines map[string]RenderEngine //引擎
-	F       string                  `mapper:"name(form);url(/form);method(GET);style(HTML)"`
+	Metas   FormMetaManager         `mapper:"name(form);url(/form);method(GET);style(HTML)"`
 }
 
 func (this *System) Init() {
 	this.engines = make(map[string]RenderEngine)
 	this.engines["FORM"] = &FormEngine{}
+	this.engines["QUERY"] = &QueryFormEngine{}
 }
 func (this *System) GetHandles() bingo_mvc.HandleMap {
 	result := bingo_mvc.NewHandleMap()
@@ -41,15 +41,19 @@ func (this *System) Form(a interface{}) interface{} {
 	if engine, ok := this.engines[request.FormType]; ok {
 		if engine != nil {
 			//获取meta信息
-
+			meta := this.Metas.GetFormMeta(request.FormName)
+			if meta == nil {
+				return fmt.Sprintf("request Form type '%s',and Form '%s' not exits! please check", request.FormType, request.FormName)
+			}
 			//生成模板
-			buffer := new(bytes.Buffer)
-			engine.Render(nil, buffer)
+			buffers := engine.Render(meta)
 			p := make(map[string]string)
-			p["FORM_NAME"] = ""
-			p["FORM_TITLE"] = ""
-			p["FORM_ACTION"] = "/form/add"
-			p["FORM_FIELDS"] = buffer.String()
+			p["FORM_NAME"] = meta.Code
+			p["FORM_TITLE"] = meta.Description
+			p["FORM_ACTION"] = meta.Action
+			for index, key := range engine.GetKeys() {
+				p[key] = buffers[index]
+			}
 			return bingo_mvc.ModelView{engine.GetTemplate(), p}
 		}
 

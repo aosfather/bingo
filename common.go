@@ -11,33 +11,43 @@ import (
 
 func init() {
 	log.SetFlags(log.Lmsgprefix)
-	bingo_utils.SetLogDebugFunc(debug)
-	bingo_utils.SetLogErrFunc(errs)
+	bingo_utils.SetLogDebugFunc(_debug)
+	bingo_utils.SetLogErrFunc(_errs)
+}
+
+func _errs(v ...interface{}) {
+	msg := fmt.Sprint(v...)
+	_log("ERROR", msg, 3)
+}
+
+func _debug(v ...interface{}) {
+	msg := fmt.Sprint(v...)
+	_log("DEBUG", msg, 3)
 }
 
 func debug(v ...interface{}) {
 	msg := fmt.Sprint(v...)
-	_log("DEBUG", msg)
+	_log("DEBUG", msg, 2)
 }
 
 func info(v ...interface{}) {
 	msg := fmt.Sprint(v...)
-	_log("INFO", msg)
+	_log("INFO", msg, 2)
 }
 
 func errs(v ...interface{}) {
 	msg := fmt.Sprint(v...)
-	_log("ERROR", msg)
+	_log("ERROR", msg, 2)
 }
 
 func errsf(formate string, v ...interface{}) {
 	msg := fmt.Sprintf(formate, v...)
-	_log("ERROR", msg)
+	_log("ERROR", msg, 2)
 }
 
-func _log(level string, msg string) {
+func _log(level string, msg string, skip int) {
 	now := time.Now().Format(bingo_utils.FORMAT_DATETIME_LOG)
-	_, file, line, ok := runtime.Caller(2)
+	_, file, line, ok := runtime.Caller(skip)
 	if !ok {
 		file = "???"
 		line = 0

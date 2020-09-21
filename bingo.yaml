@@ -10,7 +10,7 @@ bingo:
     url:  test:3306
     user: test
     password: test
-    mapper: mapper
+    mapper: libs/mapper
 
 
 

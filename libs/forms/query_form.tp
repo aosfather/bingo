@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+    <title>{{.FORM_NAME}}</title>
+    <link rel="stylesheet" href="/css/layui.css"/>
+</head>
+<body>
+<div class="layui-row">
+    <div class="layui-col layui-row-xs4">
+        <form class="layui-form">
+        <input type='hidden' name="_form_" value="{{.FORM_NAME}}"></input>
+        {{.FORM_FIELDS}}
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button type="submit" class="layui-btn" lay-submit="" lay-filter="query">查询</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+        </form>
+    </div>
+
+    <div class="layui-row-xs4"  style="padding: 1px; background-color: #F2F2F2;">
+        <div class="layui-card">
+            <div class="layui-card-header">结果：</div>
+            <div class="layui-card-body">
+                <table class="layui-table" lay-data="{height:315, page:true, id:'query_table'}" lay-filter="query_table">
+                    <thead>
+                    <tr>
+                        {{.FORM_GRID}}
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+
+</div>
+<script src="/layui.all.js"></script>
+<script>
+    //由于模块都一次性加载，因此不用执行 layui.use() 来加载对应模块，直接使用即可：
+    ;!function(){
+        var layer = layui.layer
+            ,form = layui.form,table=layui.table;
+        //监听提交
+        form.on('submit(query)', function(data){
+            table.reload('query_table', {
+                url: '{{.FORM_ACTION}}'
+                ,where: data.field //设定异步数据接口的额外参数
+                ,height: 600
+            });
+            return false;
+        });
+    }();
+</script>
+</body>
+</html>
