@@ -26,11 +26,6 @@
         </form>
 
      </div>
-
-        <div class="layui-col-xs3" style="padding: 10px; background-color: #F2F2F2;">
-
-        </div>
-
     </div>
 
 
@@ -44,9 +39,8 @@
         var $ = layui.jquery;
 
         form.verify({
-          no_verify:[]  
+          no_verify:[]
           {{.FORM_VERIFY}}
-
         });
         //监听提交
         form.on('submit(submit)', function(data){

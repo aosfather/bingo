@@ -10,6 +10,13 @@ type FormRequest struct {
 	FormType string `Field:"_type"`
 }
 
+type FormResult struct {
+	Code  int           `json:"code"`
+	Msg   string        `json:"msg"`
+	Count int           `json:"count"`
+	Data  []interface{} `json:"data"`
+}
+
 /*
   系统接口
    1、表单显示
@@ -20,6 +27,7 @@ type FormRequest struct {
 type System struct {
 	engines map[string]RenderEngine //引擎
 	Metas   FormMetaManager         `mapper:"name(form);url(/form);method(GET);style(HTML)" Inject:""`
+	Action  *FormActions            `mapper:"name(action);url(/do);method(POST);style(JSON)" Inject:""`
 }
 
 func (this *System) Init() {
@@ -30,7 +38,7 @@ func (this *System) Init() {
 func (this *System) GetHandles() bingo_mvc.HandleMap {
 	result := bingo_mvc.NewHandleMap()
 	result.Add("form", this.Form, &FormRequest{})
-	//result.Add("query", this.query, bingo_mvc.TypeOfMap())
+	result.Add("action", this.FormAction, bingo_mvc.TypeOfMap())
 	return result
 }
 
@@ -62,6 +70,12 @@ func (this *System) Form(a interface{}) interface{} {
 
 	return fmt.Sprintf("request Form type '%s',and Form '%s' not exits! please check", request.FormType, request.FormName)
 
+}
+
+func (this *System) FormAction(a interface{}) interface{} {
+	request := a.(map[string]interface{})
+	debug(request)
+	return FormResult{Code: 200, Msg: "ok"}
 }
 
 //新增
