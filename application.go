@@ -15,6 +15,17 @@ const (
 	_FilePathFormat = "%s/%s/%s.yaml"
 )
 
+type verifyFile struct {
+	Version string       `yaml:"version"`
+	Lib     string       `yaml:"lib"`
+	Datas   []verifyItem `yaml:"datas"`
+}
+
+type verifyItem struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
+}
+
 //应用的定义
 //应用由一系列forms是构成
 type Application struct {
@@ -24,10 +35,30 @@ type Application struct {
 
 func (this *Application) Init() {
 	this.Cache = contain.New(10*time.Minute, 0)
+	this.loadVerify()
 }
 
 func (this *Application) GetFilePath(p string) string {
 	return fmt.Sprintf("%s/%s", this.Root, p)
+}
+
+func (this *Application) loadVerify() {
+	verifyfile := this.GetFilePath("verifys.yaml")
+	if files.IsFileExist(verifyfile) {
+		vf := &verifyFile{}
+		data, err := ioutil.ReadFile(verifyfile)
+		if err == nil {
+			err = yaml.Unmarshal(data, vf)
+		}
+		if err != nil {
+			errs("load verify meta error:", err.Error())
+			return
+		}
+
+		for _, item := range vf.Datas {
+			AddVerify(item.Name, item.Value)
+		}
+	}
 }
 
 func (this *Application) GetFormMeta(name string) *FormMeta {
@@ -40,7 +71,7 @@ func (this *Application) GetFormMeta(name string) *FormMeta {
 		fm := &FormMeta{}
 		data, err := ioutil.ReadFile(filename)
 		if err == nil {
-			err = yaml.Unmarshal(data, &fm)
+			err = yaml.Unmarshal(data, fm)
 		}
 		if err != nil {
 			errs("load form meta error:", err.Error())

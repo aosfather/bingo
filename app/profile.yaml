@@ -1,8 +1,0 @@
-# app的定义文件
-name: app
-#请求二级域名
-prefix: myapp
-#域名
-domain: null
-script: lua
-

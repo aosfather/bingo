@@ -19,7 +19,7 @@ type FormRequest struct {
 */
 type System struct {
 	engines map[string]RenderEngine //引擎
-	Metas   FormMetaManager         `mapper:"name(form);url(/form);method(GET);style(HTML)"`
+	Metas   FormMetaManager         `mapper:"name(form);url(/form);method(GET);style(HTML)" Inject:""`
 }
 
 func (this *System) Init() {
@@ -46,15 +46,16 @@ func (this *System) Form(a interface{}) interface{} {
 				return fmt.Sprintf("request Form type '%s',and Form '%s' not exits! please check", request.FormType, request.FormName)
 			}
 			//生成模板
-			buffers := engine.Render(meta)
+			buffers, script := engine.Render(meta)
 			p := make(map[string]string)
 			p["FORM_NAME"] = meta.Code
 			p["FORM_TITLE"] = meta.Title
 			p["FORM_ACTION"] = meta.Action
+			p["FORM_VERIFY"] = script
 			for index, key := range engine.GetKeys() {
 				p[key] = buffers[index]
 			}
-			return bingo_mvc.ModelView{engine.GetTemplate(), p}
+			return bingo_mvc.ModelView{engine.GetTemplate(), &p}
 		}
 
 	}

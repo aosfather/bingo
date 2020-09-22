@@ -7,26 +7,28 @@ import (
 	"github.com/aosfather/bingo_utils/files"
 )
 
+var _app *Application
+
 func main() {
 	//应用目录
 	var appdirctory = flag.String("run", "app", "Input Your application dirctory path")
 	flag.Parse()
 	if appdirctory != nil {
 		if files.IsFileExist(*appdirctory) {
-			app := Application{Root: *appdirctory}
-			start(&app)
+			_app = &Application{Root: *appdirctory}
+			start()
 		}
 	}
 
 }
 
-func start(app *Application) {
+func start() {
 	boot := context.Boot{}
 	boot.Init(&fasthttp.FastHTTPDispatcher{}, load)
 	//boot.Init(&http.HttpDispatcher{}, load)
-	boot.StartByConfigFile(app.GetFilePath("bingo.yaml"))
+	boot.StartByConfigFile(_app.GetFilePath("bingo.yaml"))
 }
 
 func load() []interface{} {
-	return []interface{}{&System{}}
+	return []interface{}{&System{}, _app}
 }

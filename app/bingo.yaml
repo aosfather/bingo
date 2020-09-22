@@ -1,5 +1,5 @@
 bingo:
   port: 8090
   static: libs/static
-  template: libs/templates
+  template: libs/forms
   template_fix: tp

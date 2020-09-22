@@ -42,6 +42,12 @@
         var layer = layui.layer
             ,form = layui.form;
         var $ = layui.jquery;
+
+        form.verify({
+          no_verify:[]  
+          {{.FORM_VERIFY}}
+
+        });
         //监听提交
         form.on('submit(submit)', function(data){
             $.post("{{.FORM_ACTION}}",data.field ,

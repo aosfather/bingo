@@ -5,6 +5,7 @@ import (
 	"io"
 )
 
+var verifys = make(map[string]string)
 var renders = make(map[string]FormItemEditorRender)
 
 type FormItemEditorRender func(input Parameter, w io.Writer) string
@@ -17,6 +18,11 @@ func init() {
 	renders["Enum"] = enumRender
 }
 
+func AddVerify(key, value string) {
+	if key != "" && value != "" {
+		verifys[key] = value
+	}
+}
 func textRender(input Parameter, w io.Writer) string {
 	w.Write([]byte(`<input type="text" `))
 	w.Write([]byte(fmt.Sprintf(` name="%s" `, input.Name)))
@@ -24,13 +30,21 @@ func textRender(input Parameter, w io.Writer) string {
 	if input.Policy == "Must" {
 		w.Write([]byte("required"))
 	}
+	script := ""
+	if input.Verify != "" {
+		if input.Policy == "Must" {
+			w.Write([]byte("|"))
+		}
+		w.Write([]byte(input.Verify))
+		script = fmt.Sprintf(",%s:%s", input.Verify, verifys[input.Verify])
+	}
 	tip := input.InputTip
 	if tip == "" {
 		tip = "请输入"
 	}
 
 	w.Write([]byte(fmt.Sprintf(`" autocomplete="off" placeholder="%s" class="layui-input">`, tip)))
-	return ""
+	return script
 }
 
 func textAreaRender(input Parameter, w io.Writer) string {
