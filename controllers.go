@@ -49,7 +49,7 @@ func (this *System) Form(a interface{}) interface{} {
 			buffers := engine.Render(meta)
 			p := make(map[string]string)
 			p["FORM_NAME"] = meta.Code
-			p["FORM_TITLE"] = meta.Description
+			p["FORM_TITLE"] = meta.Title
 			p["FORM_ACTION"] = meta.Action
 			for index, key := range engine.GetKeys() {
 				p[key] = buffers[index]

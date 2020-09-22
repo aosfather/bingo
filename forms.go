@@ -17,12 +17,13 @@ type FormMeta struct {
 	Author      string        `yaml:"author"`
 	Version     string        `yaml:"version"`
 	UpdateDate  string        `yaml:"updateDate"`
-	Description string        `yaml:"description"`
-	Action      string        `yaml:"action"`
-	Parameters  []Parameter   `yaml:"parameters"`
-	ScriptType  string        `yaml:"scriptType"`
-	Script      string        `yaml:"script"`
-	ResultSet   []ResultField `yaml:"resultset"`
+	Title       string        `yaml:"title"`       //表单标题
+	Description string        `yaml:"description"` //表单说明
+	Action      string        `yaml:"action"`      //表单对应的动作
+	Parameters  []Parameter   `yaml:"parameters"`  //参数定义
+	ScriptType  string        `yaml:"scriptType"`  //脚本类型
+	Script      string        `yaml:"script"`      //脚本内容
+	ResultSet   []ResultField `yaml:"resultset"`   //结果集合
 }
 
 //输入参数
@@ -31,6 +32,7 @@ type Parameter struct {
 	Policy     string      `yaml:"policy"`
 	Label      string      `yaml:"label"`
 	Type       string      `yaml:"type"`
+	InputTip   string      `yaml:"tip"`  //输入提示
 	Expr       string      `yaml:"expr"` //表达式
 	Conditions []Condition `yaml:"link"` //关联条件，当为 Maybe 的时候使用。
 }

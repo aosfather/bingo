@@ -24,7 +24,12 @@ func textRender(input Parameter, w io.Writer) string {
 	if input.Policy == "Must" {
 		w.Write([]byte("required"))
 	}
-	w.Write([]byte(`" autocomplete="off" placeholder="请输入" class="layui-input">`))
+	tip := input.InputTip
+	if tip == "" {
+		tip = "请输入"
+	}
+
+	w.Write([]byte(fmt.Sprintf(`" autocomplete="off" placeholder="%s" class="layui-input">`, tip)))
 	return ""
 }
 
@@ -35,7 +40,12 @@ func textAreaRender(input Parameter, w io.Writer) string {
 	if input.Policy == "Must" {
 		w.Write([]byte("required"))
 	}
-	w.Write([]byte(`" autocomplete="off" placeholder="请输入" class="layui-textarea" rows="5"></textarea>`))
+
+	tip := input.InputTip
+	if tip == "" {
+		tip = "请输入"
+	}
+	w.Write([]byte(fmt.Sprintf(`" autocomplete="off" placeholder="%s" class="layui-textarea" rows="5"></textarea>`, tip)))
 	return ""
 }
 
@@ -57,7 +67,7 @@ func emailRender(input Parameter, w io.Writer) string {
 	if input.Policy == "Must" {
 		w.Write([]byte("required|"))
 	}
-	w.Write([]byte(`email" autocomplete="off" placeholder="请输入手机号" class="layui-input">`))
+	w.Write([]byte(`email" autocomplete="off" placeholder="请输入邮箱" class="layui-input">`))
 	return ""
 }
 
