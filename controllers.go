@@ -96,45 +96,33 @@ func (this *System) FormAction(a interface{}) interface{} {
 				return FormResult{Code: 500, Msg: e.Error()}
 			}
 
-			if result, ok := r.(string); ok {
-				return FormRawResult{Code: 0, Msg: "ok", Count: 1, Data: []json.RawMessage{[]byte(result)}}
-				//var body json.RawMessage //这个是可以直接返回结果的，用于中转服务是比较合适
-				//body=[]byte(result)
-				//return body
-			} else if result, ok := r.([]string); ok {
-				datas := []json.RawMessage{}
-				for _, item := range result {
-					datas = append(datas, []byte(item))
+			switch meta.Response.Type {
+			case PT_DIRECT:
+				if result, ok := r.(string); ok {
+					var body json.RawMessage
+					//这个是可以直接返回结果的，用于中转服务是比较合适
+					body = []byte(result)
+					return body
 				}
-				return FormRawResult{Code: 0, Msg: "ok", Count: 1, Data: datas}
+				return r
+
+			default:
+				if result, ok := r.(string); ok {
+					return FormRawResult{Code: 0, Msg: "ok", Count: 1, Data: []json.RawMessage{[]byte(result)}}
+				} else if result, ok := r.([]string); ok {
+					datas := []json.RawMessage{}
+					for _, item := range result {
+						datas = append(datas, []byte(item))
+					}
+					return FormRawResult{Code: 0, Msg: "ok", Count: 1, Data: datas}
+				}
+
+				return FormResult{Code: 0, Msg: "ok", Count: 1, Data: []interface{}{r}}
 			}
-
-			return FormResult{Code: 0, Msg: "ok,but not surport this data type!"}
-
 		}
 	}
 
 	return FormResult{Code: 500, Msg: "the form not exist!"}
-}
-
-//新增
-func (this *System) Add() {
-
-}
-
-//更新
-func (this *System) Update() {
-
-}
-
-//删除
-func (this *System) Delete() {
-
-}
-
-//查询
-func (this *System) Query() {
-
 }
 
 //上传
@@ -142,3 +130,4 @@ func (this *System) Query() {
 //下载
 //导入
 //导出
+//接口调用

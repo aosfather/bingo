@@ -24,11 +24,12 @@ func (this *FormActions) Execute(meta *FormMeta, parameter map[string]interface{
 	switch meta.ScriptType {
 	case "GET":
 		headers, body := this.processHttpScript(meta, parameter)
-		return this.doGet(meta.Url, headers, body)
+		return this.doGet(meta.Extends["url"], headers, strings.TrimSpace(body))
 	case "POST":
 		headers, body := this.processHttpScript(meta, parameter)
-		return this.doPost(meta.Url, headers, body)
+		return this.doPost(meta.Extends["url"], headers, strings.TrimSpace(body))
 	case "LUA":
+
 	case "SQL":
 	}
 

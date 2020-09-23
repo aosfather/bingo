@@ -46,7 +46,7 @@
         form.on('submit(submit)', function(data){
             $.post("{{.FORM_ACTION}}",data.field ,
                 function(data){
-                    if(data.code==200) {
+                    if(data.code==0) {
                         layer.alert("提交成功！", {time: 2500, anim: 5});
                         $("#_form")[0].reset();
                         form.render();

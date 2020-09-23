@@ -13,18 +13,47 @@ type FormMetaManager interface {
 //表单
 //案例元信息
 type FormMeta struct {
-	Code        string        `yaml:"code"`
-	Author      string        `yaml:"author"`
-	Version     string        `yaml:"version"`
-	UpdateDate  string        `yaml:"updateDate"`
-	Title       string        `yaml:"title"`       //表单标题
-	Description string        `yaml:"description"` //表单说明
-	Action      string        `yaml:"action"`      //表单对应的动作
-	Parameters  []Parameter   `yaml:"parameters"`  //参数定义
-	ScriptType  string        `yaml:"scriptType"`  //脚本类型
-	Url         string        `yaml:"url"`
-	Script      string        `yaml:"script"`    //脚本内容
-	ResultSet   []ResultField `yaml:"resultset"` //结果集合
+	Code        string            `yaml:"code"`
+	Author      string            `yaml:"author"`
+	Version     string            `yaml:"version"`
+	UpdateDate  string            `yaml:"updateDate"`
+	Title       string            `yaml:"title"`       //表单标题
+	Description string            `yaml:"description"` //表单说明
+	Action      string            `yaml:"action"`      //表单对应的动作
+	Parameters  []Parameter       `yaml:"parameters"`  //参数定义
+	Response    ResponseProcessor `yaml:"response"`    //返回处理
+	ScriptType  string            `yaml:"scriptType"`  //脚本类型
+	Extends     map[string]string `yaml:"extends"`
+	Script      string            `yaml:"script"`    //脚本内容
+	ResultSet   []ResultField     `yaml:"resultset"` //结果集合
+}
+
+const (
+	//直接返回
+	PT_DIRECT  ProcessorType = 1 << iota
+	PT_DEFAULT               //默认返回方式
+
+)
+
+type ProcessorType byte
+
+func (this *ProcessorType) UnmarshalYAML(unmarshal func(v interface{}) error) error {
+	var text string
+	unmarshal(&text)
+	text = strings.ToLower(text)
+	switch text {
+	case "direct":
+		*this = PT_DIRECT
+	default:
+		*this = PT_DEFAULT
+	}
+
+	return nil
+}
+
+type ResponseProcessor struct {
+	Type    ProcessorType     `yaml:"type"`
+	Options map[string]string `yaml:"options"`
 }
 
 //输入参数
