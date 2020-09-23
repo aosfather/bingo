@@ -9,8 +9,10 @@ import (
 	"time"
 )
 
+const _noprefix = 64
+
 func init() {
-	log.SetFlags(log.Lmsgprefix)
+	log.SetFlags(_noprefix)
 	bingo_utils.SetLogDebugFunc(_debug)
 	bingo_utils.SetLogErrFunc(_errs)
 }

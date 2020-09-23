@@ -22,8 +22,9 @@ type FormMeta struct {
 	Action      string        `yaml:"action"`      //表单对应的动作
 	Parameters  []Parameter   `yaml:"parameters"`  //参数定义
 	ScriptType  string        `yaml:"scriptType"`  //脚本类型
-	Script      string        `yaml:"script"`      //脚本内容
-	ResultSet   []ResultField `yaml:"resultset"`   //结果集合
+	Url         string        `yaml:"url"`
+	Script      string        `yaml:"script"`    //脚本内容
+	ResultSet   []ResultField `yaml:"resultset"` //结果集合
 }
 
 //输入参数

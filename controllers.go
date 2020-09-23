@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/aosfather/bingo_mvc"
 )
@@ -17,6 +18,13 @@ type FormResult struct {
 	Data  []interface{} `json:"data"`
 }
 
+type FormRawResult struct {
+	Code  int               `json:"code"`
+	Msg   string            `json:"msg"`
+	Count int               `json:"count"`
+	Data  []json.RawMessage `json:"data"`
+}
+
 /*
   系统接口
    1、表单显示
@@ -27,7 +35,7 @@ type FormResult struct {
 type System struct {
 	engines map[string]RenderEngine //引擎
 	Metas   FormMetaManager         `mapper:"name(form);url(/form);method(GET);style(HTML)" Inject:""`
-	Action  *FormActions            `mapper:"name(action);url(/do);method(POST);style(JSON)" Inject:""`
+	Action  *FormActions            `mapper:"name(action);url(/do);method(POST);method(GET);style(JSON)" Inject:""`
 }
 
 func (this *System) Init() {
@@ -58,7 +66,12 @@ func (this *System) Form(a interface{}) interface{} {
 			p := make(map[string]string)
 			p["FORM_NAME"] = meta.Code
 			p["FORM_TITLE"] = meta.Title
-			p["FORM_ACTION"] = meta.Action
+			if meta.Action == "" {
+				p["FORM_ACTION"] = "/do"
+			} else {
+				p["FORM_ACTION"] = meta.Action
+			}
+
 			p["FORM_VERIFY"] = script
 			for index, key := range engine.GetKeys() {
 				p[key] = buffers[index]
@@ -75,7 +88,33 @@ func (this *System) Form(a interface{}) interface{} {
 func (this *System) FormAction(a interface{}) interface{} {
 	request := a.(map[string]interface{})
 	debug(request)
-	return FormResult{Code: 200, Msg: "ok"}
+	if formcode, ok := request["_form_"]; ok {
+		meta := this.Metas.GetFormMeta(formcode.(string))
+		if meta != nil {
+			r, e := this.Action.Execute(meta, request)
+			if e != nil {
+				return FormResult{Code: 500, Msg: e.Error()}
+			}
+
+			if result, ok := r.(string); ok {
+				return FormRawResult{Code: 0, Msg: "ok", Count: 1, Data: []json.RawMessage{[]byte(result)}}
+				//var body json.RawMessage //这个是可以直接返回结果的，用于中转服务是比较合适
+				//body=[]byte(result)
+				//return body
+			} else if result, ok := r.([]string); ok {
+				datas := []json.RawMessage{}
+				for _, item := range result {
+					datas = append(datas, []byte(item))
+				}
+				return FormRawResult{Code: 0, Msg: "ok", Count: 1, Data: datas}
+			}
+
+			return FormResult{Code: 0, Msg: "ok,but not surport this data type!"}
+
+		}
+	}
+
+	return FormResult{Code: 500, Msg: "the form not exist!"}
 }
 
 //新增
