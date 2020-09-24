@@ -48,6 +48,11 @@
     ;!function(){
         var layer = layui.layer
             ,form = layui.form,table=layui.table;
+
+        form.verify({
+            no_verify:[]
+        {{.FORM_VERIFY}}
+        });
         //监听提交
         form.on('submit(query)', function(data){
             table.reload('query_table', {

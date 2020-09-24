@@ -19,7 +19,7 @@ parameters:
 #Query 结果集合
 resultset:
   - {name: code, label: 类型, type: String,expr: null,inner: d_id }
-  - {name: info, label: 名称, type: String,expr: null,inner: d_name }
+  - {name: a, label: 名称, type: String,expr: null,inner: d_name }
   - {name: memo, label: 备注, type: String,expr: null,inner: d_memo }
 response:
   type: direct
@@ -33,5 +33,11 @@ script: |
   result,pos,err=json.decode('{"code":0,"a":"123"}')
   log(_inputs.testType)
   log(result.a)
+
+  one= {}
+  one.code="11"
+  one.a="haha"
+  one.memo="memo!!"
+  result.data={one}
   log("haha ,lua run it")
   return json.encode(result)
