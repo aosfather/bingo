@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"github.com/aosfather/bingo_utils/lua"
+	l "github.com/yuin/gopher-lua"
 	"io"
 	"net/http"
 	"strings"
@@ -11,13 +13,35 @@ import (
 
 /**
    表单action
-支持的类型：SQL、GET、POST、LUA
+  支持的类型：SQL、GET、POST、LUA
 */
-//执行函数
-type ExecuteFunction func(map[string]interface{}) interface{}
 
 //表单action
 type FormActions struct {
+	pool *lua.LuaPool
+}
+
+func (this *FormActions) Init() {
+	//设置lua引擎的lib脚本查找路径。
+	lua.SetLuaPath(".\\libs\\lua")
+
+	//加载自定义库
+	libs := make(map[string]l.LGFunction)
+	//加载lib库
+
+	this.pool = lua.NewLuaPool(100, "bingo", libs)
+
+}
+
+func (this *FormActions) getLuaScript(code string, content string) *lua.LuaScript {
+	script := &lua.LuaScript{Log: this.lualog}
+	script.SetPool(this.pool)
+	script.Load(code, content)
+	return script
+}
+
+func (this *FormActions) lualog(str string) {
+	debug("lua:", str)
 }
 
 func (this *FormActions) Execute(meta *FormMeta, parameter map[string]interface{}) (interface{}, error) {
@@ -29,13 +53,26 @@ func (this *FormActions) Execute(meta *FormMeta, parameter map[string]interface{
 		headers, body := this.processHttpScript(meta, parameter)
 		return this.doPost(meta.Extends["url"], headers, strings.TrimSpace(body))
 	case "LUA":
-
+		return this.processLuaScript(meta.Code, meta.Script, parameter)
 	case "SQL":
 	}
 
 	return nil, nil
 }
 
+//处理lua脚本，将lua脚本作为整个的运行逻辑
+func (this *FormActions) processLuaScript(name, script string, parameter map[string]interface{}) (interface{}, error) {
+	luascript := this.getLuaScript(name, script)
+	beforeRun := func(l *l.LState) {
+		l.SetGlobal("_inputs", lua.SetReadOnly(l, lua.ToLuaTable2(l, parameter)))
+	}
+	afterRun := func(l *l.LState) {
+
+	}
+	return luascript.Call(beforeRun, afterRun)
+}
+
+//处理http请求
 func (this *FormActions) processHttpScript(meta *FormMeta, parameter map[string]interface{}) (map[string]string, string) {
 	t := template.New(meta.Code)
 	_, err := t.Parse(meta.Script)
