@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/aosfather/bingo_utils/lua"
 	l "github.com/yuin/gopher-lua"
+	"net/url"
+	"strings"
 )
 
 /**
@@ -71,11 +73,32 @@ func lua_http_post(l *l.LState) int {
 func http_tobody(v l.LValue, headers map[string]string) string {
 	switch v.Type() {
 	case l.LTTable:
-		//默认http www form方式
-
-		//如果存在则使用json方式转换table格式
+		contenttype, ok := headers["Content-Type"]
 		m := lua.ToGoMap(v)
-		return toJson(m)
+		//使用json方式则转换table格式为json
+		if ok && strings.Index(contenttype, "application/json") >= 0 {
+
+			return toJson(m)
+		}
+		//如果没有设置类型，默认设置成form-urlencoded格式
+		if !ok {
+			headers["Content-Type"] = "application/x-www-form-urlencoded"
+		}
+		//默认http www form方式
+		buffer := new(bytes.Buffer)
+		first := true
+		for key, value := range m {
+			if first {
+				first = false
+			} else {
+				buffer.WriteString("&")
+			}
+			buffer.WriteString(url.QueryEscape(key))
+			buffer.WriteString("=")
+			buffer.WriteString(url.QueryEscape(fmt.Sprintf("%v", value)))
+		}
+		return buffer.String()
+
 	default:
 		return v.String()
 	}

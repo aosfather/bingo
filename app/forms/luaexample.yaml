@@ -18,9 +18,9 @@ parameters:
     - {name: testType, policy: Must, label: 测试一下, type: String,tip: 输入测试条件, verify: user_name }
 #Query 结果集合
 resultset:
-  - {name: code, label: 类型, type: String,expr: null,inner: d_id }
-  - {name: a, label: 名称, type: String,expr: null,inner: d_name }
-  - {name: memo, label: 备注, type: String,expr: null,inner: d_memo }
+  - {name: id, label: 类型, type: String,expr: null,inner: d_id }
+  - {name: name, label: 名称, type: String,expr: null,inner: d_name }
+  - {name: apps, label: 备注, type: String,expr: null,inner: d_memo }
 response:
   type: direct
   options: {}
@@ -29,6 +29,7 @@ extends:
 scriptType: LUA
 script: |
   log(package.path)
+  db=require("db")
   json=require("dkjson")
   result,pos,err=json.decode('{"code":0,"a":"123"}')
   log(_inputs.testType)
@@ -40,4 +41,31 @@ script: |
   one.memo="memo!!"
   result.data={one}
   log("haha ,lua run it")
+  user= {}
+  user.Id="test1"
+  log(user)
+  u,e=db.find("user","findbyid",user)
+  log("ok")
+  log(e)
+  log(u.apps)
+  user.role=1
+  us,e=db.query("user","querybyrole",user)
+  result.data={u}
+  log(us)
+  for k,v in pairs(us) do
+    table.insert(result.data, v)
+  end
+  user.Id="mytest1"
+  user.Name="我的测试账户"
+  dbid,e,msg=db.insert("user","addnewuser",user)
+  log(dbid)
+  log(e)
+  log(msg)
+  user.Name="新改的名字"
+  c,e=db.update("user","updateuser",user)
+  log(c)
+  log(e)
+  c,e=db.delete("user","deleteuser",user)
+  log(c)
+  log(e)
   return json.encode(result)

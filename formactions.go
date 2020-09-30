@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"github.com/aosfather/bingo_mvc/sqltemplate"
 	"github.com/aosfather/bingo_utils/lua"
 	l "github.com/yuin/gopher-lua"
 	"io"
@@ -18,6 +19,7 @@ import (
 
 //表单action
 type FormActions struct {
+	DB   *sqltemplate.DataSource `Inject:""`
 	pool *lua.LuaPool
 }
 
@@ -25,11 +27,8 @@ func (this *FormActions) Init() {
 	//设置lua引擎的lib脚本查找路径。
 	lua.SetLuaPath(".\\libs\\lua")
 
-	//加载自定义库
-	libs := make(map[string]l.LGFunction)
-	//加载lib库
-
-	this.pool = lua.NewLuaPool(100, "bingo", libs)
+	//加载自定义库,http,db
+	this.pool = lua.NewLuaPool2(100, "bingo", &lua.LuaLib{"http", httplibs}, &lua.LuaLib{"db", CreateDataBasseLib(this.DB)})
 
 }
 
