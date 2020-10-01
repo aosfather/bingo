@@ -17,13 +17,24 @@ description:
 # verify 用于作为校验的校验规则名
 parameters:
     - {name: testType, policy: Must, label: 测试一下, type: String,tip: 输入测试条件, verify: user_name }
+    - {name: testdate, policy: Must, label: 测试一下, type: Date,tip: 输入测试条件, verify: pass_word }
+    - {name: testdate2, policy: Must, label: 测试一下, type: DateTime,tip: 输入测试条件 }
 #Query 结果集合
 resultset:
   - {name: id, label: 类型, type: String,expr: null,inner: d_id }
   - {name: name, label: 名称, type: String,expr: null,inner: d_name }
   - {name: apps, label: 备注, type: String,expr: null,inner: d_memo }
 tools:
-  - {name: del,label: 删除}
+  - {name: del,label: 删除 ,condition: ["id==\"test1\"","id==\"mytest2\""]}
+jsscript: |
+  function del(obj){
+    console.log(obj);
+    console.log("del event test")
+    layer.msg('大部分参数都是可以公用的<br>合理搭配，展示不一样的风格', {
+         time: 20000, //20s后自动关闭
+         btn: ['明白了', '知道了', '哦']
+       });
+  }
 response:
   type: direct
   options: {}
@@ -34,6 +45,7 @@ script: |
   log(package.path)
   db=require("db")
   json=require("dkjson")
+  http=require("http")
   result,pos,err=json.decode('{"code":0,"a":"123"}')
   log(_inputs.testType)
   log(result.a)
@@ -76,5 +88,7 @@ script: |
   log(c)
   log(e)
   ]]
-
+  d,e=http.get("http://www.baidu.com",{})
+  log(e)
+  log(d)
   return result

@@ -28,6 +28,7 @@ type FormMeta struct {
 	Script      string            `yaml:"script"`    //脚本内容
 	ResultSet   []ResultField     `yaml:"resultset"` //结果集合
 	Tools       []Tool            `yaml:"tools"`     //工具条
+	JSscript    string            `yaml:"jsscript"`  //js脚本
 }
 
 const (
@@ -39,8 +40,9 @@ const (
 
 //工具条定义
 type Tool struct {
-	Name  string
-	Label string
+	Name      string
+	Label     string
+	Condition []string
 }
 type ProcessorType byte
 

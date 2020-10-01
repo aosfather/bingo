@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 )
 
 //绘制引擎
 type RenderEngine interface {
-	Render(meta *FormMeta) ([]string, string)
+	Render(meta *FormMeta) ([]string, string, string)
 	GetTemplate() string
 	GetKeys() []string
 }
@@ -17,18 +18,21 @@ type RenderEngine interface {
 type FormEngine struct {
 }
 
-func (this *FormEngine) Render(meta *FormMeta) ([]string, string) {
+func (this *FormEngine) Render(meta *FormMeta) ([]string, string, string) {
 	//表单体
 	buffer := new(bytes.Buffer)
 	scriptBuffer := new(bytes.Buffer)
+	extendscriptBuffer := new(bytes.Buffer)
 	for _, input := range meta.Parameters {
-		scriptBuffer.WriteString(renderItem(input, buffer, false))
+		s, es := renderItem(input, buffer, false)
+		scriptBuffer.WriteString(s)
+		extendscriptBuffer.WriteString(es)
 	}
 
-	return []string{buffer.String()}, scriptBuffer.String()
+	return []string{buffer.String()}, scriptBuffer.String(), extendscriptBuffer.String()
 }
 
-func renderItem(input Parameter, w io.Writer, inline bool) string {
+func renderItem(input Parameter, w io.Writer, inline bool) (string, string) {
 	//字段名
 	var label string
 	if inline {
@@ -44,18 +48,18 @@ func renderItem(input Parameter, w io.Writer, inline bool) string {
 	w.Write([]byte(fmt.Sprintf(label, input.Label)))
 	//字段输入控件
 	fr := renders[input.Type]
-	var script string
+	var script, extendscript string
 	if fr != nil {
-		script = fr(input, w)
+		script, extendscript = fr(input, w)
 		debug("script:", script)
 	} else {
 		fr = renders["String"]
-		script = fr(input, w)
+		script, extendscript = fr(input, w)
 		debug("script:", script)
 	}
 	//字段结束
 	w.Write([]byte("</div></div>"))
-	return script
+	return script, extendscript
 }
 
 func (this *FormEngine) GetTemplate() string {
@@ -78,26 +82,28 @@ func (this *QueryFormEngine) GetKeys() []string {
 	return []string{"FORM_FIELDS", "FORM_GRID"}
 }
 
-func (this *QueryFormEngine) Render(meta *FormMeta) ([]string, string) {
+func (this *QueryFormEngine) Render(meta *FormMeta) ([]string, string, string) {
 
 	//渲染表单查询体
 	parameterBuffer := new(bytes.Buffer)
-	script := this.renderQueryParameters(meta, parameterBuffer)
+	script, exscript := this.renderQueryParameters(meta, parameterBuffer)
 	//渲染表格
 	gridBuffer := new(bytes.Buffer)
 	this.renderQueryGrid(meta, gridBuffer)
-	return []string{parameterBuffer.String(), gridBuffer.String()}, script
+	return []string{parameterBuffer.String(), gridBuffer.String()}, script, exscript
 }
 
 //渲染查询条件
-func (this *QueryFormEngine) renderQueryParameters(meta *FormMeta, writer io.Writer) string {
+func (this *QueryFormEngine) renderQueryParameters(meta *FormMeta, writer io.Writer) (string, string) {
 	scriptBuffer := new(bytes.Buffer)
+	extendscriptBuffer := new(bytes.Buffer)
 	for index, input := range meta.Parameters {
 		if index%4 == 0 {
 			writer.Write([]byte("<div class=\"layui-form-item\">"))
 		}
-
-		scriptBuffer.WriteString(renderItem(input, writer, true))
+		s, es := renderItem(input, writer, true)
+		scriptBuffer.WriteString(s)
+		extendscriptBuffer.WriteString(es)
 		if index%4 == 3 {
 			writer.Write([]byte("</div>"))
 		}
@@ -106,7 +112,7 @@ func (this *QueryFormEngine) renderQueryParameters(meta *FormMeta, writer io.Wri
 	if (len(meta.Parameters)-1)%4 != 3 {
 		writer.Write([]byte("</div>"))
 	}
-	return scriptBuffer.String()
+	return scriptBuffer.String(), extendscriptBuffer.String()
 }
 
 //渲染表格
@@ -120,10 +126,21 @@ func (this *QueryFormEngine) renderQueryGrid(meta *FormMeta, writer io.Writer) {
 
 		writer.Write([]byte("<div><script type=\"text/html\" id=\"tabletools\">"))
 		for _, tool := range meta.Tools {
+			var conditons []string
+			if len(tool.Condition) > 0 {
+				for _, c := range tool.Condition {
+					conditons = append(conditons, "d."+c)
+				}
+			}
+			if len(conditons) > 0 {
+				writer.Write([]byte(fmt.Sprintf("{{# if(%s){ }}", strings.Join(conditons, "||"))))
+			}
 			writer.Write([]byte(fmt.Sprintf("<button class=\"layui-btn layui-btn-sm\" lay-event=\"%s\">%s</button>", tool.Name, tool.Label)))
+			if len(conditons) > 0 {
+				writer.Write([]byte("{{# } }}"))
+			}
 		}
 		writer.Write([]byte("</script></div>"))
-
 	}
 
 }

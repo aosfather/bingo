@@ -62,7 +62,7 @@ func (this *System) Form(a interface{}) interface{} {
 	if engine, ok := this.engines[meta.FormType]; ok {
 		if engine != nil {
 			//生成模板
-			buffers, script := engine.Render(meta)
+			buffers, script, exscript := engine.Render(meta)
 			p := make(map[string]string)
 			p["FORM_NAME"] = meta.Code
 			p["FORM_TITLE"] = meta.Title
@@ -73,6 +73,8 @@ func (this *System) Form(a interface{}) interface{} {
 			}
 
 			p["FORM_VERIFY"] = script
+			p["FORM_SCRIPT"] = meta.JSscript
+			p["COMPONENT_SCRIPT"] = exscript
 			for index, key := range engine.GetKeys() {
 				p[key] = buffers[index]
 			}
