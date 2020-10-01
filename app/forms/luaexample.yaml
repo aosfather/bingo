@@ -6,6 +6,7 @@ author: test
 version: 1.0.0
 #最后更新时间
 updateDate: 2020-09-21 20:35:00
+type: QUERY
 title: 测试表单
 # 描述
 description:
@@ -21,6 +22,8 @@ resultset:
   - {name: id, label: 类型, type: String,expr: null,inner: d_id }
   - {name: name, label: 名称, type: String,expr: null,inner: d_name }
   - {name: apps, label: 备注, type: String,expr: null,inner: d_memo }
+tools:
+  - {name: del,label: 删除}
 response:
   type: direct
   options: {}
@@ -37,9 +40,12 @@ script: |
 
   one= {}
   one.code="11"
+  one.id="a1"
+  one.name="测试"
   one.a="haha"
   one.memo="memo!!"
   result.data={one}
+
   log("haha ,lua run it")
   user= {}
   user.Id="test1"
@@ -65,7 +71,10 @@ script: |
   c,e=db.update("user","updateuser",user)
   log(c)
   log(e)
+  --[[
   c,e=db.delete("user","deleteuser",user)
   log(c)
   log(e)
-  return json.encode(result)
+  ]]
+
+  return result

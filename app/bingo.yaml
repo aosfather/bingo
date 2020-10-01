@@ -3,3 +3,11 @@ bingo:
   static: libs/static
   template: libs/forms
   template_fix: tp
+  usedb: true
+  db:
+    type: mysql
+    name: bingo
+    url:  localhost:3306
+    user: dev
+    password: dev
+    mapper: libs/mapper

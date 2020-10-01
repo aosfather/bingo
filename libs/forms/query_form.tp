@@ -13,7 +13,9 @@
             <legend>{{.FORM_TITLE}}</legend>
         </fieldset>
         <form class="layui-form">
+            <!--
         <input type='hidden' name="_form_" value="{{.FORM_NAME}}"></input>
+        -->
         {{.FORM_FIELDS}}
         <div class="layui-form-item">
             <div class="layui-input-block">
