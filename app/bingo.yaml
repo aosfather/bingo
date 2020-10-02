@@ -11,3 +11,5 @@ bingo:
     user: dev
     password: dev
     mapper: libs/mapper
+  app:
+    title: 管理平台
