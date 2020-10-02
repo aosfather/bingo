@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+    <title>管理系统</title>
+    <link rel="stylesheet" href="/css/layui.css"/>
+    <style type="text/css">
+        .site-demo-title{
+            /*position: fixed;*/
+            /*left: 20px;*/
+            /*right: 0;*/
+            /*top: 65px;*/
+        }
+    </style>
+</head>
+<body class="layui-layout-body">
+<div class="layui-layout layui-layout-admin">
+
+<div class="layui-header">
+    <div class="layui-logo">管理系统</div>
+    <!-- 头部区域（可配合layui已有的水平导航） -->
+    <ul class="layui-nav layui-layout-left">
+        <li class="layui-nav-item"><a href="/applylist" target="formbody">工作台</a></li>
+        <li class="layui-nav-item"><a href="/uploadapply" target="formbody"><i class="layui-icon">&#xe67c;</i>批量申请</a>
+        </li>
+        <dd class="layui-nav-item">
+            <a href="javascript:;">其它系统</a>
+            <dl class="layui-nav-child">
+
+             </dl>
+        </li>
+    </ul>
+    <ul class="layui-nav layui-layout-right">
+        <li class="layui-nav-item">
+            <a href="javascript:;">
+                <i class="layui-icon">&#xe770</i>
+<!--                <img src="/images/face/1.gif" class="layui-nav-img"/>-->
+                <b>{{ .Name}}</b>
+            </a>
+        </li>
+        <li class="layui-nav-item"><a href="/dologout" target="_self">退出</a></li>
+    </ul>
+</div>
+
+<div class="layui-side layui-bg-black">
+
+    <div class="layui-side-scroll">
+        <div title="菜单缩放" class="site-demo-title"><i class="layui-icon">&#xe614</i></div>
+        <!-- 左侧导航区域（可配合layui已有的垂直导航） -->
+        <ul class="layui-nav layui-nav-tree"  lay-filter="test">
+{{ range .Menus }}
+            <li class="layui-nav-item">
+                <a href="javascript:;"><b style="color: aquamarine">{{ .Label}}</b></a>
+                <dl class="layui-nav-child">
+                    {{ range .Children }}
+                    <dd>
+                        <a href="javascript:;"><b style="color: #40AFFE">{{ .Label}}</b></a>
+                        <dl class="layui-nav-child">
+                            {{ range .Children }}
+                            {{ if eq .Type  1 }}
+                        <dd><a href="/queryform?name={{ .Code }}" target="formbody"">{{ .Label}}</a></dd>
+                            {{ else if eq .Type 2 }}
+                        <dd><a href="{{ .Url }}" target="formbody"">{{ .Label}}</a></dd>
+                            {{ else }}
+                        <dd><a href="/apply?name={{ .Code }}" target="formbody"">{{ .Label}}</a></dd>
+                            {{ end }}
+                            {{ end }}
+                        </dl></dd>
+                    {{ end }}
+
+                </dl>
+            </li>
+{{ end }}
+        </ul>
+    </div>
+</div>
+<div class="layui-body">
+    <iframe name="formbody" src="" class="layadmin-iframe" frameborder="0" width="100%" height="99.5%">
+    </iframe>
+</div>
+    <div class="layui-footer">
+        <!-- 底部固定区域 -->
+        © 管理系统
+    </div>
+</div>
+
+
+<script src="/layui.all.js"></script>
+<script>
+    //由于模块都一次性加载，因此不用执行 layui.use() 来加载对应模块，直接使用即可：
+    ;!function(){
+        var layer = layui.layer
+            ,form = layui.form;
+        var element= layui.element;
+        var $=layui.jquery;
+
+        element.on('nav(test)', function(elem){
+
+        });
+
+        var isShow = true;  //定义一个标志位
+        $('.site-demo-title').click(function(){
+
+            //选择出所有的span，并判断是不是hidden
+            $('.layui-nav-item span').each(function(){
+                if($(this).is(':hidden')){
+                    $(this).show();
+                }else{
+                    $(this).hide();
+                }
+            });
+            //判断isshow的状态
+            if(isShow){
+                $('.layui-side.layui-bg-black').width(60); //设置宽度
+                $('.kit-side-fold i').css('margin-right', '70%');  //修改图标的位置
+                //将footer和body的宽度修改
+                $('.layui-body').css('left', 60+'px');
+                $('.layui-footer').css('left', 60+'px');
+                //将二级导航栏隐藏
+                $('dd span').each(function(){
+                    $(this).hide();
+                });
+                //修改标志位
+                isShow =false;
+            }else{
+                $('.layui-side.layui-bg-black').width(200);
+                $('.kit-side-fold i').css('margin-right', '10%');
+                $('.layui-body').css('left', 200+'px');
+                $('.layui-footer').css('left', 200+'px');
+                $('dd span').each(function(){
+                    $(this).show();
+                });
+                isShow =true;
+            }
+        });
+
+    }();
+
+
+
+</script>
+</body>
+</html>
