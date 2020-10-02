@@ -30,5 +30,5 @@ func start() {
 }
 
 func load() []interface{} {
-	return []interface{}{&System{}, _app, &FormActions{}}
+	return []interface{}{&System{}, &MenuTree{}, _app, &FormActions{}, &Desktop{}}
 }

@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+/**
+登录处理
+1、鉴权白名单，对于特定的页面不做鉴权检查
+2、权限检查
+
+*/
 type Login interface {
 	DoLogin(l *UserLogin) error
 }

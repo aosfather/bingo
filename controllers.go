@@ -36,7 +36,6 @@ type System struct {
 	engines map[string]RenderEngine //引擎
 	Metas   FormMetaManager         `mapper:"name(form);url(/form/:_name);method(GET);style(HTML)" Inject:""`
 	Action  *FormActions            `mapper:"name(action);url(/do/:_form_);method(POST);method(GET);style(JSON)" Inject:""`
-	Index   string                  `mapper:"name(desktop);url(/desktop);method(GET);style(HTML)"`
 }
 
 func (this *System) Init() {
@@ -48,7 +47,6 @@ func (this *System) GetHandles() bingo_mvc.HandleMap {
 	result := bingo_mvc.NewHandleMap()
 	result.Add("form", this.Form, &FormRequest{})
 	result.Add("action", this.FormAction, bingo_mvc.TypeOfMap())
-	result.Add("desktop", this.Desktop, bingo_mvc.TypeOfMap())
 	return result
 }
 
@@ -130,11 +128,6 @@ func (this *System) FormAction(a interface{}) interface{} {
 }
 
 //
-func (this *System) Desktop(a interface{}) interface{} {
-	datas := make(map[string]string)
-	datas["Title"] = "测试用桌面"
-	return bingo_mvc.ModelView{"desktop", datas}
-}
 
 //上传
 

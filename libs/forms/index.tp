@@ -3,27 +3,22 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-    <title>管理系统</title>
+    <title>{{.Title}}</title>
     <link rel="stylesheet" href="/css/layui.css"/>
-    <style type="text/css">
-        .site-demo-title{
-            /*position: fixed;*/
-            /*left: 20px;*/
-            /*right: 0;*/
-            /*top: 65px;*/
-        }
-    </style>
 </head>
 <body class="layui-layout-body">
 <div class="layui-layout layui-layout-admin">
 
 <div class="layui-header">
-    <div class="layui-logo">管理系统</div>
+    <div class="layui-logo">{{.Title}}</div>
     <!-- 头部区域（可配合layui已有的水平导航） -->
     <ul class="layui-nav layui-layout-left">
-        <li class="layui-nav-item"><a href="/applylist" target="formbody">工作台</a></li>
-        <li class="layui-nav-item"><a href="/uploadapply" target="formbody"><i class="layui-icon">&#xe67c;</i>批量申请</a>
+        <li class="layui-nav-item">
+            <a href="javascript:;"  title="侧边伸缩">
+                <i class="layui-icon layui-icon-shrink-right" id="LAY_app_flexible"></i>
+            </a>
         </li>
+        <li class="layui-nav-item"><a href="/applylist" target="formbody">工作台</a></li>
         <dd class="layui-nav-item">
             <a href="javascript:;">其它系统</a>
             <dl class="layui-nav-child">
@@ -46,7 +41,6 @@
 <div class="layui-side layui-bg-black">
 
     <div class="layui-side-scroll">
-        <div title="菜单缩放" class="site-demo-title"><i class="layui-icon">&#xe614</i></div>
         <!-- 左侧导航区域（可配合layui已有的垂直导航） -->
         <ul class="layui-nav layui-nav-tree"  lay-filter="test">
 {{ range .Menus }}
@@ -58,13 +52,7 @@
                         <a href="javascript:;"><b style="color: #40AFFE">{{ .Label}}</b></a>
                         <dl class="layui-nav-child">
                             {{ range .Children }}
-                            {{ if eq .Type  1 }}
-                        <dd><a href="/queryform?name={{ .Code }}" target="formbody"">{{ .Label}}</a></dd>
-                            {{ else if eq .Type 2 }}
-                        <dd><a href="{{ .Url }}" target="formbody"">{{ .Label}}</a></dd>
-                            {{ else }}
-                        <dd><a href="/apply?name={{ .Code }}" target="formbody"">{{ .Label}}</a></dd>
-                            {{ end }}
+                        <dd class="menu-dd"><a href="{{ .Url }}" target="formbody"><i class="layui-icon">&#xe770</i><span class="layui-left-nav"> {{ .Label}}</span></a></dd>
                             {{ end }}
                         </dl></dd>
                     {{ end }}
@@ -81,7 +69,7 @@
 </div>
     <div class="layui-footer">
         <!-- 底部固定区域 -->
-        © 管理系统
+        © {{.Title}}
     </div>
 </div>
 
@@ -100,7 +88,7 @@
         });
 
         var isShow = true;  //定义一个标志位
-        $('.site-demo-title').click(function(){
+        $('#LAY_app_flexible').click(function(){
 
             //选择出所有的span，并判断是不是hidden
             $('.layui-nav-item span').each(function(){
@@ -112,6 +100,8 @@
             });
             //判断isshow的状态
             if(isShow){
+                $('#LAY_app_flexible').removeClass('layui-icon-shrink-right')
+                $('#LAY_app_flexible').addClass('layui-icon-spread-left')
                 $('.layui-side.layui-bg-black').width(60); //设置宽度
                 $('.kit-side-fold i').css('margin-right', '70%');  //修改图标的位置
                 //将footer和body的宽度修改
@@ -124,6 +114,8 @@
                 //修改标志位
                 isShow =false;
             }else{
+                $('#LAY_app_flexible').removeClass('layui-icon-spread-left')
+                $('#LAY_app_flexible').addClass('layui-icon-shrink-right')
                 $('.layui-side.layui-bg-black').width(200);
                 $('.kit-side-fold i').css('margin-right', '10%');
                 $('.layui-body').css('left', 200+'px');
