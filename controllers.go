@@ -34,8 +34,8 @@ type FormRawResult struct {
 */
 type System struct {
 	engines map[string]RenderEngine //引擎
-	Metas   FormMetaManager         `mapper:"name(form);url(/form);method(GET);style(HTML)" Inject:""`
-	Action  *FormActions            `mapper:"name(action);url(/do);method(POST);method(GET);style(JSON)" Inject:""`
+	Metas   FormMetaManager         `mapper:"name(form);url(/form/:_name);method(GET);style(HTML)" Inject:""`
+	Action  *FormActions            `mapper:"name(action);url(/do/:_form_);method(POST);method(GET);style(JSON)" Inject:""`
 }
 
 func (this *System) Init() {
@@ -54,25 +54,27 @@ func (this *System) GetHandles() bingo_mvc.HandleMap {
 func (this *System) Form(a interface{}) interface{} {
 	request := a.(*FormRequest)
 	debug(request)
-	if engine, ok := this.engines[request.FormType]; ok {
+	//获取meta信息
+	meta := this.Metas.GetFormMeta(request.FormName)
+	if meta == nil {
+		return fmt.Sprintf("request Form type '%s',and Form '%s' not exits! please check", request.FormType, request.FormName)
+	}
+	if engine, ok := this.engines[meta.FormType]; ok {
 		if engine != nil {
-			//获取meta信息
-			meta := this.Metas.GetFormMeta(request.FormName)
-			if meta == nil {
-				return fmt.Sprintf("request Form type '%s',and Form '%s' not exits! please check", request.FormType, request.FormName)
-			}
 			//生成模板
-			buffers, script := engine.Render(meta)
+			buffers, script, exscript := engine.Render(meta)
 			p := make(map[string]string)
 			p["FORM_NAME"] = meta.Code
 			p["FORM_TITLE"] = meta.Title
 			if meta.Action == "" {
-				p["FORM_ACTION"] = "/do"
+				p["FORM_ACTION"] = "/do/" + meta.Code
 			} else {
 				p["FORM_ACTION"] = meta.Action
 			}
 
 			p["FORM_VERIFY"] = script
+			p["FORM_SCRIPT"] = meta.JSscript
+			p["COMPONENT_SCRIPT"] = exscript
 			for index, key := range engine.GetKeys() {
 				p[key] = buffers[index]
 			}

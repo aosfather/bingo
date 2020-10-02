@@ -13,7 +13,9 @@
             <legend>{{.FORM_TITLE}}</legend>
         </fieldset>
         <form class="layui-form">
+            <!--
         <input type='hidden' name="_form_" value="{{.FORM_NAME}}"></input>
+        -->
         {{.FORM_FIELDS}}
         <div class="layui-form-item">
             <div class="layui-input-block">
@@ -44,15 +46,19 @@
 </div>
 <script src="/layui.all.js"></script>
 <script>
+    var layer = layui.layer, $ = layui.jquery,form = layui.form,table=layui.table,laydate = layui.laydate;
+    {{- if .FORM_SCRIPT}}
+    {{.FORM_SCRIPT}}
+    {{- end }}
     //由于模块都一次性加载，因此不用执行 layui.use() 来加载对应模块，直接使用即可：
     ;!function(){
-        var layer = layui.layer
-            ,form = layui.form,table=layui.table;
-
         form.verify({
             no_verify:[]
         {{.FORM_VERIFY}}
         });
+        {{- if .COMPONENT_SCRIPT}}
+        {{.COMPONENT_SCRIPT}}
+        {{- end }}
         //监听提交
         form.on('submit(query)', function(data){
             table.reload('query_table', {
@@ -62,7 +68,17 @@
             });
             return false;
         });
+
+        table.on('tool(query_table)',function (obj){
+            var eventfunc=obj.event;
+            f=eval(eventfunc);
+            console.log(obj)
+            if(typeof(f)=="function"){
+                f(obj.data);
+            }
+        })
     }();
+
 </script>
 </body>
 </html>

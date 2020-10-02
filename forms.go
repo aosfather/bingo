@@ -17,6 +17,7 @@ type FormMeta struct {
 	Author      string            `yaml:"author"`
 	Version     string            `yaml:"version"`
 	UpdateDate  string            `yaml:"updateDate"`
+	FormType    string            `yaml:"type"`        //表单类型
 	Title       string            `yaml:"title"`       //表单标题
 	Description string            `yaml:"description"` //表单说明
 	Action      string            `yaml:"action"`      //表单对应的动作
@@ -26,6 +27,8 @@ type FormMeta struct {
 	Extends     map[string]string `yaml:"extends"`
 	Script      string            `yaml:"script"`    //脚本内容
 	ResultSet   []ResultField     `yaml:"resultset"` //结果集合
+	Tools       []Tool            `yaml:"tools"`     //工具条
+	JSscript    string            `yaml:"jsscript"`  //js脚本
 }
 
 const (
@@ -35,6 +38,12 @@ const (
 
 )
 
+//工具条定义
+type Tool struct {
+	Name      string
+	Label     string
+	Condition []string
+}
 type ProcessorType byte
 
 func (this *ProcessorType) UnmarshalYAML(unmarshal func(v interface{}) error) error {
