@@ -8,6 +8,7 @@ import (
 )
 
 var _app *Application
+var _login *LoginAccess = &LoginAccess{}
 
 func main() {
 	//应用目录
@@ -24,11 +25,13 @@ func main() {
 
 func start() {
 	boot := context.Boot{}
-	boot.Init(&fasthttp.FastHTTPDispatcher{}, load)
+	dispatch := &fasthttp.FastHTTPDispatcher{}
+	dispatch.AddInterceptor(_login)
+	boot.Init(dispatch, load)
 	//boot.Init(&http.HttpDispatcher{}, load)
 	boot.StartByConfigFile(_app.GetFilePath("bingo.yaml"))
 }
 
 func load() []interface{} {
-	return []interface{}{&System{}, &MenuTree{}, _app, &FormActions{}, &Desktop{}}
+	return []interface{}{&System{}, &MenuTree{}, _app, _login, &FormActions{}, &DefaultLogin{}, &Desktop{}}
 }

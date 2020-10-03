@@ -13,3 +13,5 @@ bingo:
     mapper: libs/mapper
 app:
   title: 管理平台
+session:
+  salt: "123"
