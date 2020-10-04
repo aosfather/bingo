@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"github.com/aosfather/bingo_mvc"
 	"github.com/aosfather/bingo_mvc/hippo"
+	"strings"
 )
 
 type FormRequest struct {
 	FormName string `Field:"_name"`
 	FormType string `Field:"_type"`
+	_Roles   string
 }
 
 type FormResult struct {
@@ -58,7 +60,8 @@ func (this *System) Form(a interface{}) interface{} {
 	debug(request)
 	p := make(map[string]interface{})
 	p["_name"] = request.FormName
-	if !this.AuthChecker.HasPermition("/form", p, "testrole") {
+	roles := strings.Split(request._Roles, ";")
+	if !this.AuthChecker.HasPermition("/form", p, roles...) {
 		return fmt.Sprintf("request  Form '%s' has not access right!!", request.FormName)
 	}
 	//获取meta信息
@@ -99,8 +102,9 @@ func (this *System) FormAction(a interface{}) interface{} {
 	debug(request)
 	if formcode, ok := request["_form_"]; ok {
 		table := fmt.Sprintf("/do/%s", formcode)
-		if !this.AuthChecker.HasPermition(table, request, "testrole") {
-			return FormResult{Code: 400, Msg: "the form not right!"}
+		roles := strings.Split(request["_roles_"].(string), ";")
+		if !this.AuthChecker.HasPermition(table, request, roles...) {
+			return FormResult{Code: 400, Msg: "the form action you has not access right!"}
 		}
 		meta := this.Metas.GetFormMeta(formcode.(string))
 		if meta != nil {

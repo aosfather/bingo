@@ -34,6 +34,7 @@ type UserLogin struct {
 	UserName  string `json:"username"`
 	PassWord  string `json:"password"`
 	Name      string
+	Roles     string
 }
 
 //登录鉴权
@@ -99,6 +100,7 @@ func (this *LoginAccess) Login(a interface{}) interface{} {
 			r.Msg = "成功"
 			this.SetValue(u.SessionId, "name", u.Name)
 			this.SetValue(u.SessionId, "user", u.UserName)
+			this.SetValue(u.SessionId, "roles", u.Roles)
 			r.Data = []interface{}{u}
 		}
 	} else {
@@ -161,13 +163,15 @@ func (this *LoginAccess) InputProcess(context bingo_mvc.HttpContext, input inter
 			u.Name = session.GetValue("name").(string)
 		}
 
-	}
-
-	if m, ok := input.(map[string]interface{}); ok {
+	} else if u, ok := input.(*FormRequest); ok {
+		session := this.SessionMan.GetSession(context)
+		u._Roles = session.GetValue("roles").(string)
+	} else if m, ok := input.(map[string]interface{}); ok {
 		session := this.SessionMan.GetSession(context)
 		m["_session_"] = session.ID()
 		m["_user_"] = session.GetValue("user")
 		m["_username_"] = session.GetValue("name")
+		m["_roles_"] = session.GetValue("roles")
 	}
 	debug(input)
 	return nil
@@ -215,6 +219,7 @@ func (this *DefaultLogin) DoLogin(l *UserLogin) error {
 	debug(pwd)
 	if u.Pwd == pwd {
 		l.Name = u.Name
+		l.Roles = u.Roles
 	} else {
 		return fmt.Errorf("password or name error!")
 	}
@@ -228,4 +233,5 @@ type User struct {
 	Name   string
 	Depart string
 	Pwd    string
+	Roles  string
 }

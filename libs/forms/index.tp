@@ -18,7 +18,6 @@
                 <i class="layui-icon layui-icon-shrink-right" id="LAY_app_flexible"></i>
             </a>
         </li>
-        <li class="layui-nav-item"><a href="/applylist" target="formbody">工作台</a></li>
         <dd class="layui-nav-item">
             <a href="javascript:;">其它系统</a>
             <dl class="layui-nav-child">
