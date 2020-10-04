@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/aosfather/bingo_mvc"
+	"github.com/aosfather/bingo_mvc/hippo"
 )
 
 type FormRequest struct {
@@ -33,9 +34,10 @@ type FormRawResult struct {
    3、数据查询
 */
 type System struct {
-	engines map[string]RenderEngine //引擎
-	Metas   FormMetaManager         `mapper:"name(form);url(/form/:_name);method(GET);style(HTML)" Inject:""`
-	Action  *FormActions            `mapper:"name(action);url(/do/:_form_);method(POST);method(GET);style(JSON)" Inject:""`
+	engines     map[string]RenderEngine //引擎
+	Metas       FormMetaManager         `mapper:"name(form);url(/form/:_name);method(GET);style(HTML)" Inject:""`
+	Action      *FormActions            `mapper:"name(action);url(/do/:_form_);method(POST);method(GET);style(JSON)" Inject:""`
+	AuthChecker *hippo.AuthEngine       `Inject:""`
 }
 
 func (this *System) Init() {
@@ -54,6 +56,11 @@ func (this *System) GetHandles() bingo_mvc.HandleMap {
 func (this *System) Form(a interface{}) interface{} {
 	request := a.(*FormRequest)
 	debug(request)
+	p := make(map[string]interface{})
+	p["_name"] = request.FormName
+	if !this.AuthChecker.HasPermition("/form", p, "testrole") {
+		return fmt.Sprintf("request  Form '%s' has not access right!!", request.FormName)
+	}
 	//获取meta信息
 	meta := this.Metas.GetFormMeta(request.FormName)
 	if meta == nil {
@@ -91,6 +98,10 @@ func (this *System) FormAction(a interface{}) interface{} {
 	request := a.(map[string]interface{})
 	debug(request)
 	if formcode, ok := request["_form_"]; ok {
+		table := fmt.Sprintf("/do/%s", formcode)
+		if !this.AuthChecker.HasPermition(table, request, "testrole") {
+			return FormResult{Code: 400, Msg: "the form not right!"}
+		}
 		meta := this.Metas.GetFormMeta(formcode.(string))
 		if meta != nil {
 			r, e := this.Action.Execute(meta, request)

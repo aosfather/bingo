@@ -1,0 +1,10 @@
+namespace: permission
+nodes:
+  - code: getrole
+    type: query
+    template: |
+      select * from bingo_permissions where role_code={{sql .Role}} order by table_name,rowid
+  - code: existRole
+    type: exist
+    template: |
+      select * from bingo_role where code='{{.Role}}'

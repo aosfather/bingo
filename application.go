@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/aosfather/bingo_mvc/hippo"
 	"github.com/aosfather/bingo_utils/contain"
 	"github.com/aosfather/bingo_utils/files"
 	"gopkg.in/yaml.v2"
@@ -29,19 +30,26 @@ type verifyItem struct {
 //应用的定义
 //应用由一系列forms是构成
 type Application struct {
-	Root  string //应用根目录
-	Cache *contain.Cache
+	Root      string //应用根目录
+	Cache     *contain.Cache
+	TableMeta *hippo.YamlFileTableMeta `Inject:""`
 }
 
 func (this *Application) Init() {
 	this.Cache = contain.New(10*time.Minute, 0)
 	this.loadVerify()
+	this.loadAuthTable()
 }
 
 func (this *Application) GetFilePath(p string) string {
 	return fmt.Sprintf("%s/%s", this.Root, p)
 }
+func (this *Application) loadAuthTable() {
+	tablefile := this.GetFilePath("authtables.yaml")
+	this.TableMeta.Load(tablefile)
+	debug(this.TableMeta.GetTable("/form"))
 
+}
 func (this *Application) loadVerify() {
 	verifyfile := this.GetFilePath("verifys.yaml")
 	if files.IsFileExist(verifyfile) {

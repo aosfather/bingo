@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/aosfather/bingo_mvc"
 	"github.com/aosfather/bingo_mvc/sqltemplate"
+	"github.com/aosfather/bingo_utils/codes"
 	"github.com/aosfather/bingo_utils/redis"
 	"io"
 	"strings"
@@ -198,7 +199,7 @@ func (this *DefaultLogin) Init() {
 }
 func (this *DefaultLogin) DoLogin(l *UserLogin) error {
 	if l.UserName == "" || l.PassWord == "" {
-		return fmt.Errorf("password or name error")
+		return fmt.Errorf("password or name error!")
 	}
 
 	u := &User{}
@@ -207,13 +208,15 @@ func (this *DefaultLogin) DoLogin(l *UserLogin) error {
 	exist := this.Dao.Find(u, "findbyid")
 	debug(exist)
 	if !exist {
-		return fmt.Errorf("password or name error")
+		return fmt.Errorf("password or name error!")
 	}
 	debug(u)
-	if u.Pwd == l.PassWord {
+	pwd := codes.ToMd5Hex(fmt.Sprintf("%s##%s", l.PassWord, this.Salt))
+	debug(pwd)
+	if u.Pwd == pwd {
 		l.Name = u.Name
 	} else {
-		return fmt.Errorf("password or name error")
+		return fmt.Errorf("password or name error!")
 	}
 
 	return nil

@@ -1,0 +1,13 @@
+version: 1.0.0
+description: 权限表定义
+tables:
+  - code: /form
+    label: form权限控制
+    policy:
+    fields:
+      - {code: _name ,label: "访问的url" ,type: S}
+  - code: /do/luaexample
+    label: 样例表单权限
+    policy:
+    fields:
+      - {code: testType ,label: "访问的类型" ,type: S}

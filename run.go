@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/aosfather/bingo_mvc/context"
 	"github.com/aosfather/bingo_mvc/fasthttp"
+	"github.com/aosfather/bingo_mvc/hippo"
 	"github.com/aosfather/bingo_utils/files"
 )
 
@@ -33,5 +34,5 @@ func start() {
 }
 
 func load() []interface{} {
-	return []interface{}{&System{}, &MenuTree{}, _app, _login, &FormActions{}, &DefaultLogin{}, &Desktop{}}
+	return []interface{}{&System{}, &MenuTree{}, &Permissions{}, &hippo.AuthEngine{}, &hippo.YamlFileTableMeta{}, _app, _login, &FormActions{}, &DefaultLogin{}, &Desktop{}}
 }
