@@ -108,7 +108,12 @@ func (this *System) FormAction(a interface{}) interface{} {
 		}
 		meta := this.Metas.GetFormMeta(formcode.(string))
 		if meta != nil {
-			r, e := this.Action.Execute(meta, request)
+			//TODO 输入参数检查
+			err, input := meta.ValidateInput(request)
+			if err != nil {
+				return FormResult{Code: 500, Msg: err.Error()}
+			}
+			r, e := this.Action.Execute(meta, input)
 			if e != nil {
 				return FormResult{Code: 500, Msg: e.Error()}
 			}
@@ -150,3 +155,4 @@ func (this *System) FormAction(a interface{}) interface{} {
 //导入
 //导出
 //接口调用
+//输入提示

@@ -39,6 +39,7 @@ func (this *Application) Init() {
 	this.Cache = contain.New(10*time.Minute, 0)
 	this.loadVerify()
 	this.loadAuthTable()
+	this.loadTypes()
 }
 
 func (this *Application) GetFilePath(p string) string {
@@ -50,6 +51,15 @@ func (this *Application) loadAuthTable() {
 	debug(this.TableMeta.GetTable("/form"))
 
 }
+
+func (this *Application) loadTypes() {
+	typefile := this.GetFilePath("types.yaml")
+	debug(typefile)
+	yamlmeta := &YamlFileTypeMeta{}
+	types.meta = yamlmeta
+	yamlmeta.Load(typefile)
+}
+
 func (this *Application) loadVerify() {
 	verifyfile := this.GetFilePath("verifys.yaml")
 	if files.IsFileExist(verifyfile) {

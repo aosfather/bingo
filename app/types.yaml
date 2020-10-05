@@ -1,0 +1,10 @@
+types:
+  - {code: String,label: 字符类型,option:,validate: regex}
+  - {code: Date,label: 日期类型,option: "[1-9]",validate: regex}
+  - {code: DateTime,label: 日期时间类型,option: "[1-9]",validate: regex}
+  - {code: Enum,label: 枚举,option:,validate: dict}
+enums:
+  - catalog: sex
+    items:
+      - {code: M,label: 男}
+      - {code: W,label: 女}
