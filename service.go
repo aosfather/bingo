@@ -37,28 +37,6 @@ type TypesDBMeta struct {
 	DictCache Cache
 }
 
-func (this *TypesDBMeta) GetType(code string) *DataType {
-	debug("get type from db meta! ", code)
-	if data, ok := this.TypeCache.Get(code); ok {
-		return data.(*DataType)
-	}
-	item := &MetaItem{Code: code, Catalog: 0} //数据类型
-	if this.Dao.FindByObj(item, "Code", "Catalog") {
-		debug("query dictioary from db for ", code)
-		dictitem := &DataType{}
-		debug(item.Content)
-
-		err := yaml.Unmarshal([]byte(item.Content), dictitem)
-		if err != nil {
-			debug(err.Error())
-		}
-		this.TypeCache.Set(code, dictitem)
-		debug(dictitem)
-		return dictitem
-	}
-	return nil
-}
-
 func (this *TypesDBMeta) GetDictionary(code string) *DictCatalog {
 	debug("get dictionary from db meta! ", code)
 	if data, ok := this.DictCache.Get(code); ok {

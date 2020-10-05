@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/aosfather/bingo_mvc/dd"
 	"github.com/aosfather/bingo_mvc/hippo"
 	"github.com/aosfather/bingo_utils/contain"
 	"github.com/aosfather/bingo_utils/files"
@@ -55,9 +56,7 @@ func (this *Application) loadAuthTable() {
 func (this *Application) loadTypes() {
 	typefile := this.GetFilePath("types.yaml")
 	debug(typefile)
-	yamlmeta := &YamlFileTypeMeta{}
-	types.meta = yamlmeta
-	yamlmeta.Load(typefile)
+	dd.LoadConfig(typefile)
 }
 
 func (this *Application) loadVerify() {

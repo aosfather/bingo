@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/aosfather/bingo_mvc/dd"
 	"io"
 )
 
@@ -117,7 +118,7 @@ func enumRender(input Parameter, w io.Writer) (string, string) {
 	}
 	w.Write([]byte(`" >`))
 	//输出字典
-	dict := GetDict(input.Expr)
+	dict := dd.GetDict(input.Expr)
 	if dict.Code != "" {
 		for _, item := range dict.Items {
 			w.Write([]byte(fmt.Sprintf(`<option value="%s">%s</option>`, item.Code, item.Label)))

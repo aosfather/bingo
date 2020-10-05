@@ -1,9 +1,11 @@
-types:
-  - {code: String,label: 字符类型,option:,validate: regex}
-  - {code: Date,label: 日期类型,option: "[1-9]",validate: regex}
-  - {code: DateTime,label: 日期时间类型,option: "[1-9]",validate: regex}
-  - {code: Enum,label: 枚举,option:,validate: dict}
-enums:
+domains:
+  - {code: String,label: 字符类型,datatype: string,length: 100,validater: regexp,expr: "[a]+",null:}
+  - {code: Date,label: 日期类型,datatype: string,length: 10,validater: regexp,expr: "[a]+",null:}
+  - {code: DateTime,label: 日期时间类型,datatype: string,length: 19,validater: regexp,expr: "[a]+",null:}
+  - {code: Enum,label: 枚举,datatype: enum,length: ,validater: dict,expr: "",null:}
+elements:
+  - {}
+dicts:
   - catalog: sex
     items:
       - {code: M,label: 男}

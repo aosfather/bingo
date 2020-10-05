@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/aosfather/bingo_mvc/context"
+	_ "github.com/aosfather/bingo_mvc/dd"
 	"github.com/aosfather/bingo_mvc/fasthttp"
 	"github.com/aosfather/bingo_mvc/hippo"
 	"github.com/aosfather/bingo_utils/files"

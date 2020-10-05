@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/aosfather/bingo_mvc/dd"
+	"regexp"
 	"strings"
 )
 
@@ -51,10 +53,9 @@ func (this *FormMeta) ValidateInput(data map[string]interface{}) (error, map[str
 		}
 
 		//参数转换
-		if c, ok := converts[p.Type]; ok {
-			data[p.Name] = c(p.Expr, v)
-			debug("convert input", v, "-->", data[p.Name])
-		}
+
+		data[p.Name] = dd.InputByDataType(p.Type, v)
+		debug("convert input", v, "-->", data[p.Name])
 
 	}
 	return nil, data
@@ -95,6 +96,15 @@ type ResponseProcessor struct {
 	Options map[string]string `yaml:"options"`
 }
 
+//结果字段
+type ResultField struct {
+	Name      string `yaml:"name"`
+	Label     string `yaml:"label"`
+	InnerName string `yaml:"inner"`
+	Type      string `yaml:"type"`
+	Expr      string `yaml:"expr"` //表达式
+}
+
 //输入参数
 type Parameter struct {
 	Name       string      `yaml:"name"`
@@ -107,15 +117,6 @@ type Parameter struct {
 	Conditions []Condition `yaml:"link"`   //关联条件，当为 Maybe 的时候使用。
 }
 
-//结果字段
-type ResultField struct {
-	Name      string `yaml:"name"`
-	Label     string `yaml:"label"`
-	InnerName string `yaml:"inner"`
-	Type      string `yaml:"type"`
-	Expr      string `yaml:"expr"` //表达式
-}
-
 func (this *Parameter) validate(v string) error {
 	//检查是否必填
 	if this.Policy == "Must" {
@@ -125,7 +126,7 @@ func (this *Parameter) validate(v string) error {
 	}
 
 	//类型校验
-	err := types.validateType(this.Type, v, this.Name, this.Expr)
+	err := dd.ValidateByDataType(this.Name, v, this.Type) //types.validateType(this.Type, v, this.Name, this.Expr)
 	if err != nil {
 		return fmt.Errorf("参数[%s:%s]:%s", this.Name, this.Label, err.Error())
 	}
@@ -176,4 +177,24 @@ func (this *Condition) Validate(name string, v string, datas map[string]interfac
 
 	}
 	return nil
+}
+
+//非法字符校验，防止SQL注入
+// 正则过滤sql注入的方法
+// 参数 : 要匹配的语句
+var sqlcheckPattern *regexp.Regexp
+
+func init() {
+	str := `(?:')|(?:--)|(/\\*(?:.|[\\n\\r])*?\\*/)|(\b(select|update|and|or|delete|insert|trancate|char|chr|into|substr|ascii|declare|exec|count|master|into|drop|execute)\b)`
+	sqlcheckPattern = regexp.MustCompile(str)
+
+}
+
+func ValidateBySQLCheck(v string, option string) (bool, string) {
+	//过滤 ‘
+	result := sqlcheckPattern.MatchString(v)
+	if result {
+		return false, fmt.Sprintf("'%s'中存在有非法字符，怀疑有sql注入", v)
+	}
+	return true, ""
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type FormRequest struct {
-	FormName string `Field:"_name"`
+	FormName string `Field:"_name" DD:""`
 	FormType string `Field:"_type"`
 	_Roles   string
 }
@@ -56,6 +56,10 @@ func (this *System) GetHandles() bingo_mvc.HandleMap {
 
 //界面显示
 func (this *System) Form(a interface{}) interface{} {
+	//错误处理
+	if e, ok := a.(error); ok {
+		return e
+	}
 	request := a.(*FormRequest)
 	debug(request)
 	p := make(map[string]interface{})
