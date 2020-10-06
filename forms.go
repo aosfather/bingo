@@ -28,6 +28,7 @@ type FormMeta struct {
 	Extends     map[string]string `yaml:"extends"`
 	Script      string            `yaml:"script"`    //脚本内容
 	ResultSet   []ResultField     `yaml:"resultset"` //结果集合
+	Toolbar     []Tool            `yaml:"toolbar"`   //表头工具
 	Tools       []Tool            `yaml:"tools"`     //工具条
 	JSscript    string            `yaml:"jsscript"`  //js脚本
 }

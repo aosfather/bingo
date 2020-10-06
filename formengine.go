@@ -120,6 +120,7 @@ func (this *QueryFormEngine) renderQueryGrid(meta *FormMeta, writer io.Writer) {
 	for _, rs := range meta.ResultSet {
 		writer.Write([]byte(fmt.Sprintf("<th lay-data=\"{field:'%s'}\">%s</th>", rs.Name, rs.Label)))
 	}
+
 	//如果有设置动作就处理
 	if meta.Tools != nil && len(meta.Tools) > 0 {
 		writer.Write([]byte("<th lay-data=\"{fixed: 'right', toolbar: '#tabletools', width:150,align:'center'}\"></th>"))
@@ -141,6 +142,15 @@ func (this *QueryFormEngine) renderQueryGrid(meta *FormMeta, writer io.Writer) {
 			}
 		}
 		writer.Write([]byte("</script></div>"))
+	}
+
+	//处理toolbar
+	if meta.Toolbar != nil && len(meta.Toolbar) > 0 {
+		writer.Write([]byte("<div><script type=\"text/html\" id=\"tabletoolbar\"><div class=\"layui-btn-container\">"))
+		for _, tool := range meta.Toolbar {
+			writer.Write([]byte(fmt.Sprintf("<button class=\"layui-btn layui-btn-sm\" lay-event=\"%s\">%s</button>", tool.Name, tool.Label)))
+		}
+		writer.Write([]byte("</div></script></div>"))
 	}
 
 }

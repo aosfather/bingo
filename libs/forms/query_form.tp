@@ -30,7 +30,7 @@
         <div class="layui-card">
             <div class="layui-card-header">结果：</div>
             <div class="layui-card-body">
-                <table class="layui-table" lay-data="{height:315, page:true, id:'query_table'}" lay-filter="query_table">
+                <table class="layui-table" lay-data="{height:315, page:true, id:'query_table',toolbar:'#tabletoolbar',defaultToolbar:[]}" lay-filter="query_table">
                     <thead>
                     <tr>
                         {{.FORM_GRID}}
@@ -76,7 +76,18 @@
             if(typeof(f)=="function"){
                 f(obj.data);
             }
-        })
+        });
+
+        table.on('toolbar(query_table)', function(obj){
+            var checkStatus = table.checkStatus(obj.config.id);
+            var data = checkStatus.data;
+            var eventfunc=obj.event;
+            f=eval(eventfunc);
+            console.log(obj)
+            if(typeof(f)=="function"){
+                f(data);
+            }
+        });
     }();
 
 </script>
