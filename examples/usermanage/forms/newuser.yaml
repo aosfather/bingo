@@ -1,0 +1,47 @@
+# 表单 编码
+code: newuser
+#作者
+author: bingo
+#版本号
+version: 1.0.0
+#最后更新时间
+updateDate: 2020-09-21 20:35:00
+type: FORM
+title: 新增用户
+# 描述
+description: 新增用户界面
+# 参数描述.
+# name 参数名，policy 策略（Must 必填、Option 可选，Maybe 特定条件必填） label 参数描述名称
+# type 参数类型（Int 整形、String 文本、Date 日期、DateTime 日期时间）、具体的自定义类型(包括新增的字典)
+# verify 用于作为校验的校验规则名
+parameters:
+    - {name: id, policy: Must, label: 用户登录名, type: String,tip: 输入用户登录名称}
+    - {name: name, policy: Must, label: 用户名, type: String,tip: 输入用户名称}
+    - {name: pwd, policy: Must, label: 登录密码, type: String,tip: 输入设置的密码}
+    - {name: role, policy: Must, label: 角色, type: String,tip: 输入角色名称}
+extends:
+response:
+  type: direct
+  options: {}
+# 脚本类型 SQL、GET、POST、LUA
+scriptType: LUA
+script: |
+  db=require("db")
+  json=require("dkjson")
+  result={}
+  user={}
+  user.Id=_inputs.id
+  user.Name=_inputs.name
+  user.Pwd=_inputs.pwd
+  user.Roles=_inputs.role
+  user.role=1
+  dbid,e,msg=db.insert("user","addnewuser",user)
+  log(dbid)
+  log(e)
+  if (e) then
+  result.code=0
+  else
+  result.code=500
+  result.msg=msg
+  end
+  return result

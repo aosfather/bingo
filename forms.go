@@ -56,7 +56,7 @@ func (this *FormMeta) ValidateInput(data map[string]interface{}) (error, map[str
 		//参数转换
 
 		data[p.Name] = dd.InputByDataType(p.Type, v)
-		debug("convert input", v, "-->", data[p.Name])
+		debug("convert input<", v, "-->", data[p.Name], ">")
 
 	}
 	return nil, data

@@ -11,7 +11,7 @@ nodes:
   - code: addnewuser
     type: insert
     template: |
-      insert bingo_user(id,name) values({{sql .Id}},{{sql .Name}})
+      insert bingo_user(id,name,pwd,roles) values({{sql .Id}},{{sql .Name}},{{sql .Pwd}},{{sql .Roles}})
   - code: updateuser
     type: update
     template: |
