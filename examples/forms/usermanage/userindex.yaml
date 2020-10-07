@@ -39,7 +39,7 @@ jsscript: |
          Math.random()*($(window).height()-300)
          ,Math.random()*($(window).width()-390)
        ]
-       ,content: '/form/newuser'
+       ,content: '/form/usermanage.newuser'
        ,btn: [] //只是为了演示
        ,zIndex: layer.zIndex //重点1
        ,success: function(layero){

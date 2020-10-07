@@ -8,6 +8,7 @@ import (
 	"github.com/aosfather/bingo_utils/files"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"strings"
 	"time"
 )
 
@@ -82,8 +83,10 @@ func (this *Application) GetFormMeta(name string) *FormMeta {
 	if meta, exist := this.Cache.Get(name); exist {
 		return meta.(*FormMeta)
 	}
+
+	realname := strings.Replace(name, ".", "/", -1)
 	//查找文件目录,从文件中加载
-	filename := fmt.Sprintf(_FilePathFormat, this.Root, _FormDir, name)
+	filename := fmt.Sprintf(_FilePathFormat, this.Root, _FormDir, realname)
 	if files.IsFileExist(filename) {
 		fm := &FormMeta{}
 		data, err := ioutil.ReadFile(filename)
