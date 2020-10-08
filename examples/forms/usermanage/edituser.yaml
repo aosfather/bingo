@@ -1,47 +1,44 @@
 # 表单 编码
-code: hello.helloworld
+code: usermanage.edituser
 #作者
 author: bingo
 #版本号
 version: 1.0.0
 #最后更新时间
 updateDate: 2020-09-21 20:35:00
-type: QUERY
-title: 测试表单helloworld
+type: FORM
+title: 编辑用户信息
 # 描述
-description:
-
+description: 编辑用户界面
 # 参数描述.
 # name 参数名，policy 策略（Must 必填、Option 可选，Maybe 特定条件必填） label 参数描述名称
 # type 参数类型（Int 整形、String 文本、Date 日期、DateTime 日期时间）、具体的自定义类型(包括新增的字典)
 # verify 用于作为校验的校验规则名
 parameters:
-    - {name: input1, policy: Must, label: 测试一下, type: String,tip: 输入条件}
-#Query 结果集合
-resultset:
-  - {name: id, label: 类型, type: String,expr: null,inner: d_id }
-  - {name: name, label: 名称, type: String,expr: null,inner: d_name }
-  - {name: apps, label: 备注, type: String,expr: null,inner: d_memo }
-tools:
-jsscript: |
+    - {name: id, policy: Must, label: 用户登录名, type: String,tip: 输入用户登录名称, readonly: true}
+    - {name: name, policy: Must, label: 用户名, type: String,tip: 输入用户名称}
+extends:
 response:
   type: direct
   options: {}
-extends:
 # 脚本类型 SQL、GET、POST、LUA
 scriptType: LUA
 script: |
   db=require("db")
-  json=require("dkjson")
   result={}
   user={}
-  user.role=_inputs.input1
-  us,e=db.query("user","querybyrole",user)
-  log(us)
-  result.data={}
-  for k,v in pairs(us) do
-    table.insert(result.data, v)
-  end
+  user.Id=_inputs.id
+  user.Name=_inputs.name
+  user.Pwd=_inputs.pwd
+  user.Roles=_inputs.role
+  user.role=1
+  dbid,e,msg=db.update("user","updateuser",user)
+  log(dbid)
   log(e)
+  if (e) then
   result.code=0
+  else
+  result.code=500
+  result.msg=msg
+  end
   return result

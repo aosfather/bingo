@@ -1,5 +1,5 @@
 # 表单 编码
-code: userindex
+code: usermanage.userindex
 #作者
 author: bingo
 #版本号
@@ -16,6 +16,7 @@ description: 用户管理主界面
 # verify 用于作为校验的校验规则名
 parameters:
     - {name: id, policy: Must, label: 用户登录名, type: String,tip: 输入用户登录名称}
+    - {name: id2, policy: Must, label: 用户登录名, type: Date,tip: 输入用户登录名称}
 #Query 结果集合
 resultset:
   - {name: id, label: 登录名, type: String,expr: null,inner: d_id }
@@ -24,30 +25,15 @@ resultset:
 toolbar:
   - {name: adduser,label: 新增用户}
 tools:
-  - {name: deluser,label: 删除 }
+  - {name: edituser,label: 编辑 }
 jsscript: |
   function adduser(obj){
     console.log("adduser");
     console.log(obj);
-  layer.open({
-       type: 2 //此处以iframe举例
-       ,title: '当你选择该窗体时，即会在最顶端'
-       ,area: ['480px', '560px']
-       ,shade: 0
-       ,maxmin: true
-       ,offset: [ //为了演示，随机坐标
-         Math.random()*($(window).height()-300)
-         ,Math.random()*($(window).width()-390)
-       ]
-       ,content: '/form/usermanage.newuser'
-       ,btn: [] //只是为了演示
-       ,zIndex: layer.zIndex //重点1
-       ,success: function(layero){
-         layer.setTop(layero); //重点2
-       }
-     });
+    showDialog("新增","/form/usermanage.newuser");
   }
-  function deluser(obj){
+  function edituser(obj){
+    showDialogExt("修改","/form/usermanage.edituser",obj);
     console.log("deluser");
     console.log(obj);
   }
@@ -60,16 +46,17 @@ extends:
 scriptType: LUA
 script: |
   db=require("db")
-  json=require("dkjson")
-  result={}
   user={}
   user.role=_inputs.id
   us,e=db.query("user","querybyrole",user)
   log(us)
+  log(e)
+  result={}
+
   result.data={}
   for k,v in pairs(us) do
     table.insert(result.data, v)
   end
-  log(e)
+
   result.code=0
   return result

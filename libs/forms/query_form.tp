@@ -45,6 +45,7 @@
 
 </div>
 <script src="/layui.all.js"></script>
+<script src="/bingo.js"></script>
 <script>
     var layer = layui.layer, $ = layui.jquery,form = layui.form,table=layui.table,laydate = layui.laydate;
     {{- if .FORM_SCRIPT}}

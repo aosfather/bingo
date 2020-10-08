@@ -19,6 +19,7 @@ func init() {
 	renders["Date"] = dateRender
 	renders["DateTime"] = datetimeRender
 	renders["Enum"] = enumRender
+	renders["text"] = textAreaRender
 }
 
 func AddVerify(key, value string) {
@@ -26,97 +27,120 @@ func AddVerify(key, value string) {
 		verifys[key] = value
 	}
 }
-func textRender(input Parameter, w io.Writer) (string, string) {
-	w.Write([]byte(`<input type="text" `))
-	w.Write([]byte(fmt.Sprintf(` name="%s" `, input.Name)))
-	w.Write([]byte(`lay-verify="`))
+
+func writeAttrible(att string, value string, w io.Writer) {
+	w.Write([]byte(att))
+	w.Write([]byte(`="`))
+	w.Write([]byte(value))
+	w.Write([]byte(`" `))
+}
+
+func writeString(attstr string, w io.Writer) {
+	w.Write([]byte(attstr))
+}
+
+//预制的组件
+func preTextinput(input Parameter, verify string, plachholder string, w io.Writer) {
+	writeString(`<input type="text" `, w)
+	writeAttrible("name", input.Name, w)
+	writeAttrible("id", input.Name, w)
 	if input.Policy == "Must" {
-		w.Write([]byte("required"))
+		verify = "required|" + verify
+	}
+	writeAttrible("lay-verify", verify, w)
+	writeString(` autocomplete="off" `, w)
+	writeAttrible("placeholder", plachholder, w)
+	if input.Readonly {
+		writeString(` readonly="true"`, w)
+	}
+	writeString(` class="layui-input">`, w)
+
+}
+func textRender(input Parameter, w io.Writer) (string, string) {
+	writeString(`<input type="text" `, w)
+	writeAttrible("name", input.Name, w)
+	verify := ""
+	if input.Policy == "Must" {
+		verify = "required"
 	}
 	script := ""
 	if input.Verify != "" {
 		if input.Policy == "Must" {
-			w.Write([]byte("|"))
+			verify = verify + "|"
 		}
-		w.Write([]byte(input.Verify))
+		verify = verify + input.Verify
 		script = fmt.Sprintf(",%s:%s", input.Verify, verifys[input.Verify])
 	}
+	writeAttrible("lay-verify", verify, w)
 	tip := input.InputTip
 	if tip == "" {
 		tip = "请输入"
 	}
+	writeString(`autocomplete="off"`, w)
+	writeAttrible("placeholder", tip, w)
+	if input.Readonly {
+		writeString(` readonly="true"`, w)
+	}
 
-	w.Write([]byte(fmt.Sprintf(`" autocomplete="off" placeholder="%s" class="layui-input">`, tip)))
+	writeString(` class="layui-input">`, w)
 	return script, ""
 }
 
 func textAreaRender(input Parameter, w io.Writer) (string, string) {
-	w.Write([]byte(`<textarea `))
-	w.Write([]byte(fmt.Sprintf(` name="%s" `, input.Name)))
-	w.Write([]byte(`lay-verify="`))
+	writeString(`<textarea `, w)
+	writeAttrible("name", input.Name, w)
+	verify := ""
 	if input.Policy == "Must" {
-		w.Write([]byte("required"))
+		verify = "required"
 	}
-
+	writeAttrible("lay-verify", verify, w)
 	tip := input.InputTip
 	if tip == "" {
 		tip = "请输入"
 	}
-	w.Write([]byte(fmt.Sprintf(`" autocomplete="off" placeholder="%s" class="layui-textarea" rows="5"></textarea>`, tip)))
+	writeString(`autocomplete="off"`, w)
+	writeAttrible("placeholder", tip, w)
+	if input.Readonly {
+		writeString(` readonly="true"`, w)
+	}
+
+	writeString(` class="layui-textarea" rows="5"></textarea>`, w)
 	return "", ""
 }
 
 func phoneRender(input Parameter, w io.Writer) (string, string) {
-	w.Write([]byte(`<input type="text" `))
-	w.Write([]byte(fmt.Sprintf(` name="%s" `, input.Name)))
-	w.Write([]byte(`lay-verify="`))
-	if input.Policy == "Must" {
-		w.Write([]byte("required|"))
-	}
-	w.Write([]byte(`phone" autocomplete="off" placeholder="请输入手机号" class="layui-input">`))
+	preTextinput(input, "phone", "请输入手机号", w)
 	return "", ""
 }
 
 func emailRender(input Parameter, w io.Writer) (string, string) {
-	w.Write([]byte(`<input type="text" `))
-	w.Write([]byte(fmt.Sprintf(` name="%s" `, input.Name)))
-	w.Write([]byte(`lay-verify="`))
-	if input.Policy == "Must" {
-		w.Write([]byte("required|"))
-	}
-	w.Write([]byte(`email" autocomplete="off" placeholder="请输入邮箱" class="layui-input">`))
+	preTextinput(input, "email", "请输入邮箱", w)
 	return "", ""
 }
 
 func dateRender(input Parameter, w io.Writer) (string, string) {
-	w.Write([]byte(`<input type="text" `))
-	w.Write([]byte(fmt.Sprintf(`name="%s" id="%s"`, input.Name, input.Name)))
-	w.Write([]byte(`lay-verify="`))
-	if input.Policy == "Must" {
-		w.Write([]byte("required|"))
-	}
-	w.Write([]byte(`date" autocomplete="off" placeholder="yyyy-MM-dd" class="layui-input">`))
+	preTextinput(input, "date", "yyyy-MM-dd", w)
 	return "", fmt.Sprintf("laydate.render({elem: '#%s'});", input.Name)
 }
 
 func datetimeRender(input Parameter, w io.Writer) (string, string) {
-	w.Write([]byte(`<input type="text" `))
-	w.Write([]byte(fmt.Sprintf(`name="%s" id="%s"`, input.Name, input.Name)))
-	w.Write([]byte(`lay-verify="`))
-	if input.Policy == "Must" {
-		w.Write([]byte("required|"))
-	}
-	w.Write([]byte(`datetime" autocomplete="off" placeholder="yyyy-MM-dd HH:mm:ss" class="layui-input">`))
+	preTextinput(input, "datetime", "yyyy-MM-dd HH:mm:ss", w)
 	return "", fmt.Sprintf("laydate.render({elem: '#%s',type: 'datetime'});", input.Name)
 }
 
 func enumRender(input Parameter, w io.Writer) (string, string) {
-	w.Write([]byte(fmt.Sprintf(`<select name="%s" `, input.Name)))
-	w.Write([]byte(`lay-verify="`))
+	writeString(`<select `, w)
+	writeAttrible("name", input.Name, w)
+	verify := ""
 	if input.Policy == "Must" {
-		w.Write([]byte("required"))
+		verify = "required"
 	}
-	w.Write([]byte(`" >`))
+	writeAttrible("lay-verify", verify, w)
+	if input.Readonly {
+		writeString(` readonly="true"`, w)
+	}
+	writeString(`>`, w)
+
 	//输出字典
 	dict := dd.GetDict(input.Expr)
 	if dict.Code != "" {
@@ -124,8 +148,7 @@ func enumRender(input Parameter, w io.Writer) (string, string) {
 			w.Write([]byte(fmt.Sprintf(`<option value="%s">%s</option>`, item.Code, item.Label)))
 		}
 	}
-
-	w.Write([]byte(" </select>"))
+	writeString(` </select>`, w)
 
 	return "", ""
 }

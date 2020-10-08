@@ -112,10 +112,11 @@ type Parameter struct {
 	Policy     string      `yaml:"policy"`
 	Label      string      `yaml:"label"`
 	Type       string      `yaml:"type"`
-	InputTip   string      `yaml:"tip"`    //输入提示
-	Verify     string      `yaml:"verify"` //前端校验规则
-	Expr       string      `yaml:"expr"`   //表达式
-	Conditions []Condition `yaml:"link"`   //关联条件，当为 Maybe 的时候使用。
+	InputTip   string      `yaml:"tip"`      //输入提示
+	Verify     string      `yaml:"verify"`   //前端校验规则
+	Expr       string      `yaml:"expr"`     //表达式
+	Readonly   bool        `yaml:"readonly"` //只读方式
+	Conditions []Condition `yaml:"link"`     //关联条件，当为 Maybe 的时候使用。
 }
 
 func (this *Parameter) validate(v string) error {
