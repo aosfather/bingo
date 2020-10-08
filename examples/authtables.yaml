@@ -1,12 +1,12 @@
 version: 1.0.0
 description: 权限表定义
 tables:
-  - code: /form
+  - code: /form1
     label: form权限控制
     policy:
     fields:
       - {code: _name ,label: "访问的url" ,type: S}
-  - code: /do/luaexample
+  - code: /do/hello.helloworld
     label: 样例表单权限
     policy:
     fields:

@@ -14,7 +14,7 @@ var _login *LoginAccess = &LoginAccess{}
 
 func main() {
 	//应用目录
-	var appdirctory = flag.String("run", "app", "Input Your application dirctory path")
+	var appdirctory = flag.String("run", "examples", "Input Your application dirctory path")
 	flag.Parse()
 	if appdirctory != nil {
 		if files.IsFileExist(*appdirctory) {
