@@ -46,17 +46,10 @@ extends:
 scriptType: LUA
 script: |
   db=require("db")
+  require("bingo")
   user={}
   user.role=_inputs.id
   us,e=db.query("user","querybyrole",user)
   log(us)
   log(e)
-  result={}
-
-  result.data={}
-  for k,v in pairs(us) do
-    table.insert(result.data, v)
-  end
-
-  result.code=0
-  return result
+  return toSuccessResult(us)
