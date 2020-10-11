@@ -28,7 +28,8 @@ func (this *FormActions) Init() {
 	lua.SetLuaPath(".\\libs\\lua")
 
 	//加载自定义库,http,db
-	this.pool = lua.NewLuaPool2(100, "bingo", &lua.LuaLib{"http", httplibs}, &lua.LuaLib{"db", CreateDataBasseLib(this.DB)})
+	this.pool = lua.NewLuaPool2(100, "bingo", &lua.LuaLib{"http", httplibs}, &lua.LuaLib{"db", CreateDataBasseLib(this.DB)},
+		&lua.LuaLib{"sys", syslibs})
 
 }
 
@@ -53,7 +54,6 @@ func (this *FormActions) Execute(meta *FormMeta, parameter map[string]interface{
 		return this.doPost(meta.Extends["url"], headers, strings.TrimSpace(body))
 	case "LUA":
 		return this.processLuaScript(meta.Code, meta.Script, parameter)
-	case "SQL":
 	}
 
 	return nil, nil
@@ -117,10 +117,6 @@ func (this *FormActions) doPost(url string, headers map[string]string, body stri
 		return "", err
 	}
 	return buffer.String(), nil
-
-}
-
-func (this *FormActions) doSQL() {
 
 }
 

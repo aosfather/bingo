@@ -15,13 +15,12 @@ description: 用户管理主界面
 # type 参数类型（Int 整形、String 文本、Date 日期、DateTime 日期时间）、具体的自定义类型(包括新增的字典)
 # verify 用于作为校验的校验规则名
 parameters:
-    - {name: id, policy: Must, label: 用户登录名, type: String,tip: 输入用户登录名称}
-    - {name: id2, policy: Must, label: 用户登录名, type: Date,tip: 输入用户登录名称}
+    - {name: role, policy: Must, label: 用户角色, type: String,tip: 输入用户登录名称}
 #Query 结果集合
 resultset:
-  - {name: id, label: 登录名, type: String,expr: null,inner: d_id }
-  - {name: name, label: 名称, type: String,expr: null,inner: d_name }
-  - {name: apps, label: 备注, type: String,expr: null,inner: d_memo }
+  - {name: id, label: 登录名, type: String }
+  - {name: name, label: 名称, type: String }
+  - {name: depart, label: 部门, type: String}
 toolbar:
   - {name: adduser,label: 新增用户}
 tools:
@@ -42,13 +41,13 @@ response:
   type: direct
   options: {}
 extends:
-# 脚本类型 SQL、GET、POST、LUA
+# 脚本类型 GET、POST、LUA
 scriptType: LUA
 script: |
   db=require("db")
   require("bingo")
   user={}
-  user.role=_inputs.id
+  user.role=_inputs.role
   us,e=db.query("user","querybyrole",user)
   log(us)
   log(e)

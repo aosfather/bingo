@@ -35,6 +35,7 @@ type Application struct {
 	Root      string //应用根目录
 	Cache     *contain.Cache
 	TableMeta *hippo.YamlFileTableMeta `Inject:""`
+	Develop   bool                     `Value:"app.develop"`
 }
 
 func (this *Application) Init() {
@@ -80,8 +81,10 @@ func (this *Application) loadVerify() {
 }
 
 func (this *Application) GetFormMeta(name string) *FormMeta {
-	if meta, exist := this.Cache.Get(name); exist {
-		return meta.(*FormMeta)
+	if !this.Develop {
+		if meta, exist := this.Cache.Get(name); exist {
+			return meta.(*FormMeta)
+		}
 	}
 
 	realname := strings.Replace(name, ".", "/", -1)

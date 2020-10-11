@@ -7,15 +7,15 @@ nodes:
   - code: querybyrole
     type: query
     template: |
-      select * from bingo_user where role={{sql .role}}
+      select * from bingo_user where roles ={{sql .role}}
   - code: addnewuser
     type: insert
     template: |
-      insert bingo_user(id,name,pwd,roles) values({{sql .Id}},{{sql .Name}},{{sql .Pwd}},{{sql .Roles}})
+      insert bingo_user(id,name,depart,pwd,roles) values({{sql .Id}},{{sql .Name}},{{sql .Depart}},{{sql .Pwd}},{{sql .Roles}})
   - code: updateuser
     type: update
     template: |
-      update bingo_user set name={{sql .Name}} where id={{sql .Id}}
+      update bingo_user set name={{sql .Name}},depart={{sql .Depart}},roles={{sql .Roles}} where id={{sql .Id}}
   - code: deleteuser
     type: delete
     template: |

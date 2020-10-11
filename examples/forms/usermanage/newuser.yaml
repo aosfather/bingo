@@ -17,6 +17,7 @@ description: 新增用户界面
 parameters:
     - {name: id, policy: Must, label: 用户登录名, type: String,tip: 输入用户登录名称}
     - {name: name, policy: Must, label: 用户名, type: String,tip: 输入用户名称}
+    - {name: depart, policy: Must, label: 部门, type: String,tip: 输入所在部门}
     - {name: pwd, policy: Must, label: 登录密码, type: String,tip: 输入设置的密码}
     - {name: role, policy: Must, label: 角色, type: String,tip: 输入角色名称}
 extends:
@@ -28,13 +29,14 @@ scriptType: LUA
 script: |
   db=require("db")
   json=require("dkjson")
+  sys=require("sys")
   result={}
   user={}
   user.Id=_inputs.id
   user.Name=_inputs.name
-  user.Pwd=_inputs.pwd
+  user.Depart=_inputs.depart
+  user.Pwd=sys.topassword(_inputs.pwd)
   user.Roles=_inputs.role
-  user.role=1
   dbid,e,msg=db.insert("user","addnewuser",user)
   log(dbid)
   log(e)

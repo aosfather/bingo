@@ -200,6 +200,11 @@ func (this *DefaultLogin) Init() {
 	if this.Salt == "" {
 		this.Salt = "$$##_default_salt_##$$"
 	}
+	topasswords = this.topassword
+}
+
+func (this *DefaultLogin) topassword(str string) string {
+	return codes.ToMd5Hex(fmt.Sprintf("%s##%s", str, this.Salt))
 }
 func (this *DefaultLogin) DoLogin(l *UserLogin) error {
 	if l.UserName == "" || l.PassWord == "" {
@@ -235,3 +240,7 @@ type User struct {
 	Pwd    string
 	Roles  string
 }
+
+type MD5pwd func(string) string
+
+var topasswords MD5pwd

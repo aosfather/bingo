@@ -15,8 +15,10 @@ description: 编辑用户界面
 # type 参数类型（Int 整形、String 文本、Date 日期、DateTime 日期时间）、具体的自定义类型(包括新增的字典)
 # verify 用于作为校验的校验规则名
 parameters:
-    - {name: id, policy: Must, label: 用户登录名, type: String,tip: 输入用户登录名称, readonly: true}
-    - {name: name, policy: Must, label: 用户名, type: String,tip: 输入用户名称}
+    - {name: id, policy: Must, label: 用户登录名, type: String,tip: 输入用户登录名称, readonly: true }
+    - {name: name, policy: Must, label: 用户名, type: String,tip: 输入用户名称 }
+    - { name: depart, policy: Must, label: 部门, type: String,tip: 输入所在部门 }
+    - { name: roles, policy: Must, label: 角色, type: String,tip: 输入角色名称 }
 extends:
 response:
   type: direct
@@ -29,9 +31,8 @@ script: |
   user={}
   user.Id=_inputs.id
   user.Name=_inputs.name
-  user.Pwd=_inputs.pwd
-  user.Roles=_inputs.role
-  user.role=1
+  user.Depart=_inputs.depart
+  user.Roles=_inputs.roles
   dbid,e,msg=db.update("user","updateuser",user)
   log(dbid)
   log(e)
