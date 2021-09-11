@@ -7,6 +7,7 @@ import (
 	"log"
 )
 
+//基本元素定义。类型和字典
 type Meta struct {
 	Types []bingo_dao.DataType `yaml:"types"`
 	Dicts []bingo_dao.DictCatalog
@@ -45,17 +46,21 @@ func LoadElementsFromYaml(name string, m *Elements) {
 	}
 }
 
+/**
+  表及结构的定义
+  包括表列表和结构列表
+*/
 type Tables struct {
 	Tables  []bingo_dao.Table
 	Structs []bingo_dao.DataStruct
 }
 
-func LoadTablesFromYaml(name string, m *Tables) {
+func (this *Tables) LoadTablesFromYaml(name string) {
 	data, err := ioutil.ReadFile(name)
 	if err != nil {
 		log.Println(err.Error())
 	}
-	err = yaml.Unmarshal(data, m)
+	err = yaml.Unmarshal(data, this)
 	if err != nil {
 		log.Println(err.Error())
 	}

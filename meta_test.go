@@ -4,6 +4,7 @@ import (
 	"testing"
 )
 
+//元数据表定义
 func TestLoadFromYaml(t *testing.T) {
 	m := Meta{}
 	LoadFromYaml("app/meta.yaml", &m)
@@ -14,6 +15,6 @@ func TestLoadFromYaml(t *testing.T) {
 	t.Log(e.Elements[0].Type())
 
 	tables := Tables{}
-	LoadTablesFromYaml("app/tables.yaml", &tables)
+	tables.LoadTablesFromYaml("app/tables.yaml")
 	t.Log(tables)
 }
